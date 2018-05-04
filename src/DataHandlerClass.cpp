@@ -1,50 +1,3 @@
-/*
- * DataHandlerClass.cpp
- *
- * This is the implementation of the DataHandlerClass.h
- * Three threads are spawned when start() is called.
- *  1) readIncomingData() thread
- *  2) sortIncomingData() thread
- *  3) syncedBufferSwap() thread
- *  
- * Together they implement a double-buffered read from the data serial port 
- * which sorts the data into the class's mmwDataPacket struct.
- *
- *
- * Copyright (C) 2017 Texas Instruments Incorporated - http://www.ti.com/ 
- * 
- * 
- *  Redistribution and use in source and binary forms, with or without 
- *  modification, are permitted provided that the following conditions 
- *  are met:
- *
- *    Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer.
- *
- *    Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the   
- *    distribution.
- *
- *    Neither the name of Texas Instruments Incorporated nor the names of
- *    its contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS 
- *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT 
- *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- *  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT 
- *  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, 
- *  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT 
- *  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- *  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
- *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE 
- *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
-*/
-
-
 #include <DataHandlerClass.h>
 #include <pthread.h>
 #include <algorithm>
@@ -60,7 +13,7 @@
 DataUARTHandler::DataUARTHandler(ros::NodeHandle* nh) : currentBufp(&pingPongBuffers[0]) , nextBufp(&pingPongBuffers[1]) 
 {
     nodeHandle = nh;
-    DataUARTHandler_pub = nodeHandle->advertise< sensor_msgs::PointCloud2 >("RScan", 100);
+    DataUARTHandler_pub = nodeHandle->advertise< sensor_msgs::PointCloud2 >("/ti_mmwave_data/radar_scan", 100);
     maxAllowedElevationAngleDeg = 90; // Use max angle if none specified
     maxAllowedAzimuthAngleDeg = 90; // Use max angle if none specified
 }
@@ -312,15 +265,15 @@ void *DataUARTHandler::sortIncomingData( void )
 	    if((((mmwData.header.version >> 24) & 0xFF) < 1) || (((mmwData.header.version >> 16) & 0xFF) < 1))  //check if SDK version is older than 1.1
 	    {
                //ROS_INFO("mmWave device firmware detected version: 0x%8.8X", mmwData.header.version);
-	       headerSize = 28;
+	        headerSize = 28;
 	    }
             else if((mmwData.header.platform & 0xFFFF) == 0x1443)
 	    {
-	       headerSize = 28;
+	        headerSize = 28;
 	    }
 	    else  // 1642
 	    {
-	       headerSize = 32;
+	        headerSize = 32;
 	    }
             if(currentBufp->size() < headerSize)
             {
@@ -373,9 +326,10 @@ void *DataUARTHandler::sortIncomingData( void )
             memcpy( &mmwData.xyzQFormat, &currentBufp->at(currentDatap), sizeof(mmwData.xyzQFormat));
             currentDatap += ( sizeof(mmwData.xyzQFormat) );
             
-            RScan->header.seq = 0;
+            // RScan->header.seq = 0;
+            RScan->header.stamp = ros::Time:now();
             //RScan->header.stamp = (uint32_t) mmwData.header.timeCpuCycles;
-            RScan->header.frame_id = "base_radar_link";
+            RScan->header.frame_id = "ti_mmwave_radar";
             RScan->height = 1;
             RScan->width = mmwData.numObjOut;
             RScan->is_dense = 1;
@@ -442,7 +396,7 @@ void *DataUARTHandler::sortIncomingData( void )
                 for(int j = 0; j < 3; j++)
                 {
                     if(temp[j] > 32767)
-                        temp[j] -= 65535;
+                        temp[j] -= 65536;
                     
                     temp[j] = temp[j] / pow(2,mmwData.xyzQFormat);
                  }   
