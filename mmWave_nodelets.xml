@@ -1,0 +1,16 @@
+<library path="lib/libmmwave">
+  <class name="ti_mmwave_rospkg/mmWaveCommSrv" type="ti_mmwave_rospkg::mmWaveCommSrv" base_class_type="nodelet::Nodelet">
+  <description>
+  Command Service Nodelet
+  </description>
+  </class>
+  
+  <class name="ti_mmwave_rospkg/mmWaveDataHdl" type="ti_mmwave_rospkg::mmWaveDataHdl" base_class_type="nodelet::Nodelet">
+  <description>
+  Data Handler Nodelet
+  </description>
+  </class>
+  
+  <depend>serial</depend>
+  
+</library>

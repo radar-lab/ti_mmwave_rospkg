@@ -1,0 +1,21 @@
+<!--
+  This file will launch rViz along with the mmWave sensor node and configure a TI mmWave 1642 sensor using a 2D config
+ -->
+
+<launch>
+
+  <!-- Call mmWave sensor launch file -->
+  <include file="$(find ti_mmwave_rospkg)/launch/ti_mmwave_sensor.launch">
+    <arg name="device" value="1642" doc="TI mmWave sensor device type [1443, 1642]"/>
+    <arg name="config" value="2d" doc="TI mmWave sensor device configuration [3d (not supported by 1642 EVM), 2d]"/>
+    <arg name="max_allowed_elevation_angle_deg" value="90" doc="Maximum allowed elevation angle in degrees for detected object data [0 > value >= 90]}"/>
+    <arg name="max_allowed_azimuth_angle_deg" value="90" doc="Maximum allowed azimuth angle in degrees for detected object data [0 > value >= 90]}"/>
+  </include>
+
+  <!-- Static transform from map to base_radar_link for visualization of stand-alone mmWave sensor using Rviz -->
+  <node pkg="tf" type="static_transform_publisher" name="static_tf_map_to_base_radar_link" args="0 0 0 0 0 0 map base_radar_link 100"/>
+
+  <!-- Launch Rviz with pre-defined configuration to view mmWave sensor detected object data (color by intensity) -->
+  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find ti_mmwave_rospkg)/launch/radar_det_obj_color_by_intensity.rviz"/>
+
+</launch>
