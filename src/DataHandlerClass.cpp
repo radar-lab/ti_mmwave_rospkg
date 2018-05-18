@@ -9,11 +9,11 @@
 #include <pcl/point_types.h>
 #include <cmath>
 
-
 DataUARTHandler::DataUARTHandler(ros::NodeHandle* nh) : currentBufp(&pingPongBuffers[0]) , nextBufp(&pingPongBuffers[1]) 
 {
     nodeHandle = nh;
-    DataUARTHandler_pub = nodeHandle->advertise< sensor_msgs::PointCloud2 >("/ti_mmwave_data/radar_scan", 100);
+    DataUARTHandler_pub = nodeHandle->advertise<sensor_msgs::PointCloud2>("/ti_mmwave_data/radar_scan_pcl", 100);
+    radar_scan_pub = nodeHandle->advertise<ti_mmwave_rospkg::RadarScan>("/ti_mmwave_data/radar_scan", 100);
     maxAllowedElevationAngleDeg = 90; // Use max angle if none specified
     maxAllowedAzimuthAngleDeg = 90; // Use max angle if none specified
 }
@@ -226,7 +226,8 @@ void *DataUARTHandler::sortIncomingData( void )
     float maxAzimuthAngleRatio;
     
     boost::shared_ptr<pcl::PointCloud<pcl::PointXYZI>> RScan(new pcl::PointCloud<pcl::PointXYZI>);
-    
+    ti_mmwave_rospkg::RadarScan radarscan;
+
     //wait for first packet to arrive
     pthread_mutex_lock(&countSync_mutex);
     pthread_cond_wait(&sort_go_cv, &countSync_mutex);
@@ -262,23 +263,17 @@ void *DataUARTHandler::sortIncomingData( void )
             currentDatap += ( sizeof(mmwData.header.platform) );      
             
             //if packet doesn't have correct header size (which is based on platform and SDK version), throw it away (does not include magicWord since it was already removed)
-	    if((((mmwData.header.version >> 24) & 0xFF) < 1) || (((mmwData.header.version >> 16) & 0xFF) < 1))  //check if SDK version is older than 1.1
-	    {
+            if((((mmwData.header.version >> 24) & 0xFF) < 1) || (((mmwData.header.version >> 16) & 0xFF) < 1)) { //check if SDK version is older than 1.1
                //ROS_INFO("mmWave device firmware detected version: 0x%8.8X", mmwData.header.version);
-	        headerSize = 28;
-	    }
-            else if((mmwData.header.platform & 0xFFFF) == 0x1443)
-	    {
-	        headerSize = 28;
-	    }
-	    else  // 1642
-	    {
-	        headerSize = 32;
-	    }
-            if(currentBufp->size() < headerSize)
-            {
-               sorterState = SWAP_BUFFERS;
-               break;
+                headerSize = 28;
+            } else if((mmwData.header.platform & 0xFFFF) == 0x1443) {
+                headerSize = 28;
+            } else {               // 1642
+                headerSize = 32;
+            }
+            if(currentBufp->size() < headerSize) {
+                sorterState = SWAP_BUFFERS;
+                break;
             }
             
             //get frameNumber (4 bytes)
@@ -298,11 +293,10 @@ void *DataUARTHandler::sortIncomingData( void )
             currentDatap += ( sizeof(mmwData.header.numTLVs) );
             
             //get subFrameNumber (4 bytes) (not used for XWR1443)
-            if((mmwData.header.platform & 0xFFFF) != 0x1443)
-	    {
+            if((mmwData.header.platform & 0xFFFF) != 0x1443) {
                memcpy( &mmwData.header.subFrameNumber, &currentBufp->at(currentDatap), sizeof(mmwData.header.subFrameNumber));
                currentDatap += ( sizeof(mmwData.header.subFrameNumber) );
-	    }
+            }
 
             //if packet lengths do not patch, throw it away
             if(mmwData.header.totalPacketLen == currentBufp->size() )
@@ -327,14 +321,16 @@ void *DataUARTHandler::sortIncomingData( void )
             currentDatap += ( sizeof(mmwData.xyzQFormat) );
             
             // RScan->header.seq = 0;
-            RScan->header.stamp = ros::Time:now();
-            //RScan->header.stamp = (uint32_t) mmwData.header.timeCpuCycles;
+            // RScan->header.stamp = (uint64_t)(ros::Time::now());
+            // RScan->header.stamp = (uint32_t) mmwData.header.timeCpuCycles;
             RScan->header.frame_id = "ti_mmwave_radar";
             RScan->height = 1;
             RScan->width = mmwData.numObjOut;
             RScan->is_dense = 1;
             RScan->points.resize(RScan->width * RScan->height);
             
+            radarscan.header.frame_id = "ti_mmwave_radar";
+            radarscan.header.stamp = ros::Time::now();
             // Calculate ratios for max desired elevation and azimuth angles
             if ((maxAllowedElevationAngleDeg >= 0) && (maxAllowedElevationAngleDeg < 90))
             {
@@ -409,7 +405,15 @@ void *DataUARTHandler::sortIncomingData( void )
                 RScan->points[i].y = -temp[0];  // ROS standard coordinate system Y-axis is left which is the mmWave sensor -(X-axis)
                 RScan->points[i].z = temp[2];   // ROS standard coordinate system Z-axis is up which is the same as mmWave sensor Z-axis
                 RScan->points[i].intensity = temp[3];
-               
+                
+                radarscan.target_id = i;
+                radarscan.x = temp[1];
+                radarscan.y = -temp[0];
+                radarscan.range = mmwData.objOut.rangeIdx;
+                radarscan.doppler = mmwData.objOut.dopplerIdx;
+                radarscan.intensity = temp[3];
+                radar_scan_pub.publish(radarscan);
+
                 // Keep point if elevation and azimuth angles are less than specified max values
                 // (NOTE: The following calculations are done using ROS standard coordinate system axis definitions where X is forward and Y is left)
                 if (((maxElevationAngleRatioSquared == -1) ||
@@ -418,16 +422,14 @@ void *DataUARTHandler::sortIncomingData( void )
                       ) < maxElevationAngleRatioSquared)
                     ) &&
                     ((maxAzimuthAngleRatio == -1) || (fabs(RScan->points[i].y / RScan->points[i].x) < maxAzimuthAngleRatio)) &&
-		            (RScan->points[i].x != 0)
-                   )
-                {
+                    (RScan->points[i].x != 0)
+                   ) {
                     //ROS_INFO("Kept point");
                     i++;
                 }
 
                 // Otherwise, remove the point
-                else
-                {
+                else {
                     //ROS_INFO("Removed point");
                     mmwData.numObjOut--;
                 }
@@ -441,7 +443,7 @@ void *DataUARTHandler::sortIncomingData( void )
             //ROS_INFO("DataUARTHandler Sort Thread: number of obj = %d", mmwData.numObjOut );
             
             DataUARTHandler_pub.publish(RScan);
-            
+
             sorterState = CHECK_TLV_TYPE;
             
             break;

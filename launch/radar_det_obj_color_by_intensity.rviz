@@ -76,7 +76,7 @@ Visualization Manager:
       Size (Pixels): 3
       Size (m): 0.0299999993
       Style: Spheres
-      Topic: /ti_mmwave_data/radar_scan
+      Topic: /ti_mmwave_data/radar_scan_pcl
       Unreliable: false
       Use Fixed Frame: true
       Use rainbow: false
