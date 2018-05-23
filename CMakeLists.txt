@@ -17,7 +17,7 @@ find_package(catkin REQUIRED COMPONENTS
   pluginlib
 )
 
-find_package(Boost REQUIRED )
+find_package(Boost REQUIRED)
 
 find_package(Threads REQUIRED)
 
@@ -140,11 +140,13 @@ link_directories( ${PCL_LIBRARY_DIRS} )
 add_definitions(${PCL_DEFINITIONS})
 
 ## Declare a C++ library
- add_library(mmwave
-   src/mmWaveDataHdl.cpp
-   src/mmWaveCommSrv.cpp
-   src/DataHandlerClass.cpp
- )
+add_library(mmwave
+  src/mmWaveDataHdl.cpp
+  src/mmWaveCommSrv.cpp
+  src/DataHandlerClass.cpp
+  src/mmWaveQuickConfig.cpp
+  src/parameter_parser.cpp
+)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
