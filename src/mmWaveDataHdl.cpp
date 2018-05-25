@@ -17,16 +17,16 @@ void mmWaveDataHdl::onInit()
    int myMaxAllowedElevationAngleDeg;
    int myMaxAllowedAzimuthAngleDeg;
    
-   private_nh.getParam("/mmWave_Manager/data_port", mySerialPort);
+   private_nh.getParam("/ti_mmwave/data_port", mySerialPort);
    
-   private_nh.getParam("/mmWave_Manager/data_rate", myBaudRate);
+   private_nh.getParam("/ti_mmwave/data_rate", myBaudRate);
    
-   if (!(private_nh.getParam("/mmWave_Manager/max_allowed_elevation_angle_deg", myMaxAllowedElevationAngleDeg)))
+   if (!(private_nh.getParam("/ti_mmwave/max_allowed_elevation_angle_deg", myMaxAllowedElevationAngleDeg)))
    {
       myMaxAllowedElevationAngleDeg = 90;  // Use max angle if none specified
    }
 
-   if (!(private_nh.getParam("/mmWave_Manager/max_allowed_azimuth_angle_deg", myMaxAllowedAzimuthAngleDeg)))
+   if (!(private_nh.getParam("/ti_mmwave/max_allowed_azimuth_angle_deg", myMaxAllowedAzimuthAngleDeg)))
    {
       myMaxAllowedAzimuthAngleDeg = 90;  // Use max angle if none specified
    }

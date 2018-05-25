@@ -11,9 +11,9 @@ void mmWaveCommSrv::onInit()
 {
    ros::NodeHandle private_nh = getPrivateNodeHandle();
    
-   private_nh.getParam("/mmWave_Manager/command_port", mySerialPort);
+   private_nh.getParam("/ti_mmwave/command_port", mySerialPort);
    
-   private_nh.getParam("/mmWave_Manager/command_rate", myBaudRate);
+   private_nh.getParam("/ti_mmwave/command_rate", myBaudRate);
    
    ROS_INFO("mmWaveCommSrv: command_port = %s", mySerialPort.c_str());
    ROS_INFO("mmWaveCommSrv: command_rate = %d", myBaudRate);

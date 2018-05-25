@@ -8,7 +8,7 @@
 
 int main(int argc, char **argv) {
   ros::init(argc, argv, "mmWaveQuickConfig");
-  ros::NodeHandle n;
+  ros::NodeHandle nh;
   ti_mmwave_rospkg::mmWaveCLI srv;
   if (argc != 2) {
     ROS_INFO("mmWaveQuickConfig: usage: mmWaveQuickConfig /file_directory/params.cfg");
@@ -16,8 +16,9 @@ int main(int argc, char **argv) {
   } else 
     ROS_INFO("mmWaveQuickConfig: Configuring mmWave device using config file: %s", argv[1]);
   
-  ros::ServiceClient client = n.serviceClient<ti_mmwave_rospkg::mmWaveCLI>("/mmWaveCommSrv/mmWaveCLI");
-  std::ifstream myParams; 
+  ros::ServiceClient client = nh.serviceClient<ti_mmwave_rospkg::mmWaveCLI>("/mmWaveCommSrv/mmWaveCLI");
+  std::ifstream myParams;
+  ti_mmwave_rospkg::parameter_parser p;
   //wait for service to become available
   ros::service::waitForService("/mmWaveCommSrv/mmWaveCLI", 100000); 
   
@@ -32,9 +33,8 @@ int main(int argc, char **argv) {
         ROS_INFO("mmWaveQuickConfig: Sending command: '%s'", srv.request.comm.c_str() );
         if (client.call(srv)) {
           if (std::regex_search(srv.response.resp, std::regex("Done"))) {
-            ROS_INFO("mmWaveQuickConfig: Command successful (mmWave sensor responded with 'Done')");
-            ti_mmwave_rospkg::parameter_parser p;
-            p.params_parser(srv, n);
+            ROS_INFO("mmWaveQuickConfig: Command successful (mmWave sensor responded with 'Done')");            
+            p.params_parser(srv, nh);
           } else {
             ROS_ERROR("mmWaveQuickConfig: Command failed (mmWave sensor did not respond with 'Done')");
             ROS_ERROR("mmWaveQuickConfig: Response: '%s'", srv.response.resp.c_str() );
@@ -47,6 +47,7 @@ int main(int argc, char **argv) {
         }
       }
     }
+    p.cal_params(nh);
     myParams.close();
   } else {
     ROS_ERROR("mmWaveQuickConfig: Failed to open File %s", argv[1]);

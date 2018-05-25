@@ -16,6 +16,29 @@ DataUARTHandler::DataUARTHandler(ros::NodeHandle* nh) : currentBufp(&pingPongBuf
     radar_scan_pub = nodeHandle->advertise<ti_mmwave_rospkg::RadarScan>("/ti_mmwave_data/radar_scan", 100);
     maxAllowedElevationAngleDeg = 90; // Use max angle if none specified
     maxAllowedAzimuthAngleDeg = 90; // Use max angle if none specified
+
+    // Wait for parameters
+    while(!nh->hasParam("/ti_mmwave/doppler_vel_resolution")){}
+        
+
+    int ntx;
+    float fs;
+    float fc;
+    float PRI;
+    float max_range;
+    float vrange;
+    float max_vel;
+    float vvel;
+
+    nh->getParam("/ti_mmwave/num_TX", ntx);
+    nh->getParam("/ti_mmwave/fs", fs);
+    nh->getParam("/ti_mmwave/fc", fc);
+    nh->getParam("/ti_mmwave/PRI", PRI);
+    nh->getParam("/ti_mmwave/max_range", max_range);
+    nh->getParam("/ti_mmwave/range_resolution", vrange);
+    nh->getParam("/ti_mmwave/max_doppler_vel", max_vel);
+    nh->getParam("/ti_mmwave/doppler_vel_resolution", vvel);
+    ROS_INFO("%f,%f,%f,%f", max_range, vrange, max_vel, vvel);
 }
 
 /*Implementation of setUARTPort*/
