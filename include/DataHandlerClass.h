@@ -9,6 +9,16 @@
 #include <boost/shared_ptr.hpp>
 #include "ros/ros.h"
 #include "sensor_msgs/PointCloud2.h"
+#include <pthread.h>
+#include <algorithm>
+#include "pcl_ros/point_cloud.h"
+#include "sensor_msgs/PointField.h"
+#include "sensor_msgs/PointCloud2.h"
+#include "sensor_msgs/point_cloud2_iterator.h"
+#include <pcl/io/pcd_io.h>
+#include <pcl/point_types.h>
+#include <visualization_msgs/Marker.h>
+#include <cmath>
 #define COUNT_SYNC_MAX 2
 
 class DataUARTHandler{
@@ -47,7 +57,18 @@ public:
     mmwDataPacket mmwData;
 
 private:
-    
+
+    int nd;
+    float tfr;
+    int ntx;
+    float fs;
+    float fc;
+    float PRI;
+    float max_range;
+    float vrange;
+    float max_vel;
+    float vvel;
+
     /*Contains the name of the serial port*/
     char* dataSerialPort;
     
@@ -104,10 +125,13 @@ private:
     /*Sort incoming UART Data Thread*/
     void *sortIncomingData(void);
     
+    void visualize(const ti_mmwave_rospkg::RadarScan &msg);
+
     ros::NodeHandle* nodeHandle;
     
     ros::Publisher DataUARTHandler_pub;
     ros::Publisher radar_scan_pub;
+    ros::Publisher marker_pub;
 };
 
 #endif 

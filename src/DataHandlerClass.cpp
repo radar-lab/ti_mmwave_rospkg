@@ -1,35 +1,17 @@
 #include <DataHandlerClass.h>
-#include <pthread.h>
-#include <algorithm>
-#include "pcl_ros/point_cloud.h"
-#include "sensor_msgs/PointField.h"
-#include "sensor_msgs/PointCloud2.h"
-#include "sensor_msgs/point_cloud2_iterator.h"
-#include <pcl/io/pcd_io.h>
-#include <pcl/point_types.h>
-#include <cmath>
 
-DataUARTHandler::DataUARTHandler(ros::NodeHandle* nh) : currentBufp(&pingPongBuffers[0]) , nextBufp(&pingPongBuffers[1]) 
-{
-    nodeHandle = nh;
-    DataUARTHandler_pub = nodeHandle->advertise<sensor_msgs::PointCloud2>("/ti_mmwave_data/radar_scan_pcl", 100);
-    radar_scan_pub = nodeHandle->advertise<ti_mmwave_rospkg::RadarScan>("/ti_mmwave_data/radar_scan", 100);
+DataUARTHandler::DataUARTHandler(ros::NodeHandle* nh) : currentBufp(&pingPongBuffers[0]) , nextBufp(&pingPongBuffers[1]) {
+    DataUARTHandler_pub = nh->advertise<sensor_msgs::PointCloud2>("/ti_mmwave/radar_scan_pcl", 100);
+    radar_scan_pub = nh->advertise<ti_mmwave_rospkg::RadarScan>("/ti_mmwave/radar_scan", 100);
+    marker_pub = nh->advertise<visualization_msgs::Marker>("/ti_mmwave/radar_scan_markers", 100);
     maxAllowedElevationAngleDeg = 90; // Use max angle if none specified
     maxAllowedAzimuthAngleDeg = 90; // Use max angle if none specified
 
     // Wait for parameters
     while(!nh->hasParam("/ti_mmwave/doppler_vel_resolution")){}
-        
 
-    int ntx;
-    float fs;
-    float fc;
-    float PRI;
-    float max_range;
-    float vrange;
-    float max_vel;
-    float vvel;
-
+    nh->getParam("/ti_mmwave/numLoops", nd);
+    nh->getParam("/ti_mmwave/framePeriodicity", tfr);
     nh->getParam("/ti_mmwave/num_TX", ntx);
     nh->getParam("/ti_mmwave/fs", fs);
     nh->getParam("/ti_mmwave/fc", fc);
@@ -38,7 +20,10 @@ DataUARTHandler::DataUARTHandler(ros::NodeHandle* nh) : currentBufp(&pingPongBuf
     nh->getParam("/ti_mmwave/range_resolution", vrange);
     nh->getParam("/ti_mmwave/max_doppler_vel", max_vel);
     nh->getParam("/ti_mmwave/doppler_vel_resolution", vvel);
-    ROS_INFO("%f,%f,%f,%f", max_range, vrange, max_vel, vvel);
+
+    tfr *= 1e-3;
+    ROS_INFO("List of parameters:\nPRI: %f s\nFrame time: %f s\nfs: %f Hz\nNumber of chirps: %d\nMax range: %f m\nRange resolution: %f m\nMax Doppler: +-%f m/s\nDoppler resolution: %f m/s", \
+        PRI, tfr, fs, nd, max_range, vrange, max_vel/2, vvel);
 }
 
 /*Implementation of setUARTPort*/
@@ -346,36 +331,23 @@ void *DataUARTHandler::sortIncomingData( void )
             // RScan->header.seq = 0;
             // RScan->header.stamp = (uint64_t)(ros::Time::now());
             // RScan->header.stamp = (uint32_t) mmwData.header.timeCpuCycles;
-            RScan->header.frame_id = "ti_mmwave_radar";
+            RScan->header.frame_id = "ti_mmwave_pcl";
             RScan->height = 1;
             RScan->width = mmwData.numObjOut;
             RScan->is_dense = 1;
             RScan->points.resize(RScan->width * RScan->height);
             
-            radarscan.header.frame_id = "ti_mmwave_radar";
-            radarscan.header.stamp = ros::Time::now();
             // Calculate ratios for max desired elevation and azimuth angles
-            if ((maxAllowedElevationAngleDeg >= 0) && (maxAllowedElevationAngleDeg < 90))
-            {
+            if ((maxAllowedElevationAngleDeg >= 0) && (maxAllowedElevationAngleDeg < 90)) {
                 maxElevationAngleRatioSquared = tan(maxAllowedElevationAngleDeg * M_PI / 180.0);
                 maxElevationAngleRatioSquared = maxElevationAngleRatioSquared * maxElevationAngleRatioSquared;
-            }
-            else
-            {
-                maxElevationAngleRatioSquared = -1;
-            }
-            if ((maxAllowedAzimuthAngleDeg >= 0) && (maxAllowedAzimuthAngleDeg < 90))
-            {
-                maxAzimuthAngleRatio = tan(maxAllowedAzimuthAngleDeg * M_PI / 180.0);
-            }
-            else
-            {
-                maxAzimuthAngleRatio = -1;
-            }
+            } else maxElevationAngleRatioSquared = -1;
+            if ((maxAllowedAzimuthAngleDeg >= 0) && (maxAllowedAzimuthAngleDeg < 90)) maxAzimuthAngleRatio = tan(maxAllowedAzimuthAngleDeg * M_PI / 180.0);
+            else maxAzimuthAngleRatio = -1;
+
             //ROS_INFO("maxElevationAngleRatioSquared = %f", maxElevationAngleRatioSquared);
             //ROS_INFO("maxAzimuthAngleRatio = %f", maxAzimuthAngleRatio);
             //ROS_INFO("mmwData.numObjOut before = %d", mmwData.numObjOut);
-
 
             //set some parameters for pointcloud
             while( i < mmwData.numObjOut )
@@ -405,49 +377,51 @@ void *DataUARTHandler::sortIncomingData( void )
                 currentDatap += ( sizeof(mmwData.objOut.z) );
                 
                 //convert from Qformat to float(meters)
-                float temp[4];
+                float temp[6];
                 
                 temp[0] = (float) mmwData.objOut.x;
                 temp[1] = (float) mmwData.objOut.y;
                 temp[2] = (float) mmwData.objOut.z;
-                //temp[4] = //doppler 
+                temp[3] = (float) mmwData.objOut.dopplerIdx;
+
+                for (int j = 0; j < 4; j++) {
+                    if (temp[j] > 32767) temp[j] -= 65536;
+                    if (j < 3) temp[j] = temp[j] / pow(2 , mmwData.xyzQFormat);
+                }   
                 
-                for(int j = 0; j < 3; j++)
-                {
-                    if(temp[j] > 32767)
-                        temp[j] -= 65536;
-                    
-                    temp[j] = temp[j] / pow(2,mmwData.xyzQFormat);
-                 }   
-                 
+                // if (temp[3]!=0) std::cout<<temp[3]<<'\n';
+                temp[3] *= vvel;
+
                 // Convert intensity to dB
-                temp[3] = 10 * log10(mmwData.objOut.peakVal + 1);  // intensity
+
+                temp[4] = (float) mmwData.objOut.rangeIdx * vrange;
+                temp[5] = 10 * log10(mmwData.objOut.peakVal + 1);  // intensity
+                temp[6] = std::atan2(-temp[0], temp[1]) / M_PI * 180;
                 
                 // Map mmWave sensor coordinates to ROS coordinate system
                 RScan->points[i].x = temp[1];   // ROS standard coordinate system X-axis is forward which is the mmWave sensor Y-axis
                 RScan->points[i].y = -temp[0];  // ROS standard coordinate system Y-axis is left which is the mmWave sensor -(X-axis)
                 RScan->points[i].z = temp[2];   // ROS standard coordinate system Z-axis is up which is the same as mmWave sensor Z-axis
-                RScan->points[i].intensity = temp[3];
+                RScan->points[i].intensity = temp[5];
                 
+                radarscan.header.frame_id = "ti_mmwave_radar";
+            	radarscan.header.stamp = ros::Time::now();
+
                 radarscan.target_id = i;
                 radarscan.x = temp[1];
                 radarscan.y = -temp[0];
-                radarscan.range = mmwData.objOut.rangeIdx;
-                radarscan.doppler = mmwData.objOut.dopplerIdx;
-                radarscan.intensity = temp[3];
-                radar_scan_pub.publish(radarscan);
+                radarscan.range = temp[4];
+                radarscan.doppler = temp[3];
+                radarscan.bearing = temp[6];
+                radarscan.intensity = temp[5];
+                
 
                 // Keep point if elevation and azimuth angles are less than specified max values
                 // (NOTE: The following calculations are done using ROS standard coordinate system axis definitions where X is forward and Y is left)
-                if (((maxElevationAngleRatioSquared == -1) ||
-                     (((RScan->points[i].z * RScan->points[i].z) / (RScan->points[i].x * RScan->points[i].x +
-                                                                    RScan->points[i].y * RScan->points[i].y)
-                      ) < maxElevationAngleRatioSquared)
-                    ) &&
-                    ((maxAzimuthAngleRatio == -1) || (fabs(RScan->points[i].y / RScan->points[i].x) < maxAzimuthAngleRatio)) &&
-                    (RScan->points[i].x != 0)
-                   ) {
+                if (((maxElevationAngleRatioSquared == -1) || (((RScan->points[i].z * RScan->points[i].z) / (RScan->points[i].x * RScan->points[i].x + RScan->points[i].y * RScan->points[i].y)) < maxElevationAngleRatioSquared)) && ((maxAzimuthAngleRatio == -1) || (fabs(RScan->points[i].y / RScan->points[i].x) < maxAzimuthAngleRatio)) && (RScan->points[i].x != 0)) {
                     //ROS_INFO("Kept point");
+                    radar_scan_pub.publish(radarscan);
+                    visualize(radarscan);
                     i++;
                 }
 
@@ -731,4 +705,35 @@ void* DataUARTHandler::sortIncomingData_helper(void *context)
 void* DataUARTHandler::syncedBufferSwap_helper(void *context)
 {  
     return (static_cast<DataUARTHandler*>(context)->syncedBufferSwap());
+}
+
+void DataUARTHandler::visualize(const ti_mmwave_rospkg::RadarScan &msg){
+    visualization_msgs::Marker marker;
+
+    marker.header.frame_id = "ti_mmwave_markers";
+    marker.header.stamp = ros::Time::now();
+    marker.id = msg.target_id;
+    marker.type = visualization_msgs::Marker::SPHERE;
+    marker.lifetime = ros::Duration(tfr);
+    marker.action = marker.ADD;
+
+    marker.pose.position.x = msg.x;
+    marker.pose.position.y = msg.y;
+    marker.pose.position.z = 0;
+
+    marker.pose.orientation.x = 0;
+    marker.pose.orientation.y = 0;
+    marker.pose.orientation.z = 0;
+    marker.pose.orientation.w = 0;
+
+    marker.scale.x = .03;
+    marker.scale.y = .03;
+    marker.scale.z = .03;
+    
+    marker.color.a = 1;
+    marker.color.r = (int) 255 * msg.intensity;
+    marker.color.g = (int) 255 * msg.intensity;
+    marker.color.b = 1;
+
+    marker_pub.publish(marker);
 }

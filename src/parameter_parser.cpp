@@ -90,9 +90,9 @@ void parameter_parser::cal_params(ros::NodeHandle &nh) {
 
   int ntx = chirpEndIdx - chirpStartIdx + 1;
   int nd = numLoops;
+  int nr = numAdcSamples;
   float fs = 1e3 * digOutSampleRate;
   float kf = freqSlopeConst * 1e12;
-  float nr = (float)numAdcSamples;
   float adc_duration = nr / fs;
   float PRI = (idleTime + rampEndTime) * 1e-6;
   float fc = startFreq * 1e9 + kf * (adcStartTime * 1e-6 + adc_duration / 2); 
