@@ -1,68 +1,29 @@
-/*
- * DataHandlerClass.cpp
- *
- * This is the implementation of the DataHandlerClass.h
- * Three threads are spawned when start() is called.
- *  1) readIncomingData() thread
- *  2) sortIncomingData() thread
- *  3) syncedBufferSwap() thread
- *  
- * Together they implement a double-buffered read from the data serial port 
- * which sorts the data into the class's mmwDataPacket struct.
- *
- *
- * Copyright (C) 2017 Texas Instruments Incorporated - http://www.ti.com/ 
- * 
- * 
- *  Redistribution and use in source and binary forms, with or without 
- *  modification, are permitted provided that the following conditions 
- *  are met:
- *
- *    Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer.
- *
- *    Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the   
- *    distribution.
- *
- *    Neither the name of Texas Instruments Incorporated nor the names of
- *    its contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS 
- *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT 
- *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- *  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT 
- *  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, 
- *  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT 
- *  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- *  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
- *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE 
- *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
-*/
-
-
 #include <DataHandlerClass.h>
-#include <pthread.h>
-#include <algorithm>
-#include "pcl_ros/point_cloud.h"
-#include "sensor_msgs/PointField.h"
-#include "sensor_msgs/PointCloud2.h"
-#include "sensor_msgs/point_cloud2_iterator.h"
-#include <pcl/io/pcd_io.h>
-#include <pcl/point_types.h>
-#include <cmath>
 
-
-DataUARTHandler::DataUARTHandler(ros::NodeHandle* nh) : currentBufp(&pingPongBuffers[0]) , nextBufp(&pingPongBuffers[1]) 
-{
-    nodeHandle = nh;
-    DataUARTHandler_pub = nodeHandle->advertise< sensor_msgs::PointCloud2 >("RScan", 100);
+DataUARTHandler::DataUARTHandler(ros::NodeHandle* nh) : currentBufp(&pingPongBuffers[0]) , nextBufp(&pingPongBuffers[1]) {
+    DataUARTHandler_pub = nh->advertise<sensor_msgs::PointCloud2>("/ti_mmwave/radar_scan_pcl", 100);
+    radar_scan_pub = nh->advertise<ti_mmwave_rospkg::RadarScan>("/ti_mmwave/radar_scan", 100);
+    marker_pub = nh->advertise<visualization_msgs::Marker>("/ti_mmwave/radar_scan_markers", 100);
     maxAllowedElevationAngleDeg = 90; // Use max angle if none specified
     maxAllowedAzimuthAngleDeg = 90; // Use max angle if none specified
+
+    // Wait for parameters
+    while(!nh->hasParam("/ti_mmwave/doppler_vel_resolution")){}
+
+    nh->getParam("/ti_mmwave/numLoops", nd);
+    nh->getParam("/ti_mmwave/framePeriodicity", tfr);
+    nh->getParam("/ti_mmwave/num_TX", ntx);
+    nh->getParam("/ti_mmwave/fs", fs);
+    nh->getParam("/ti_mmwave/fc", fc);
+    nh->getParam("/ti_mmwave/PRI", PRI);
+    nh->getParam("/ti_mmwave/max_range", max_range);
+    nh->getParam("/ti_mmwave/range_resolution", vrange);
+    nh->getParam("/ti_mmwave/max_doppler_vel", max_vel);
+    nh->getParam("/ti_mmwave/doppler_vel_resolution", vvel);
+
+    tfr *= 1e-3;
+    ROS_INFO("List of parameters:\nPRI: %f s\nFrame time: %f s\nfs: %f Hz\nNumber of chirps: %d\nMax range: %f m\nRange resolution: %f m\nMax Doppler: +-%f m/s\nDoppler resolution: %f m/s", \
+        PRI, tfr, fs, nd, max_range, vrange, max_vel/2, vvel);
 }
 
 /*Implementation of setUARTPort*/
@@ -273,7 +234,8 @@ void *DataUARTHandler::sortIncomingData( void )
     float maxAzimuthAngleRatio;
     
     boost::shared_ptr<pcl::PointCloud<pcl::PointXYZI>> RScan(new pcl::PointCloud<pcl::PointXYZI>);
-    
+    ti_mmwave_rospkg::RadarScan radarscan;
+
     //wait for first packet to arrive
     pthread_mutex_lock(&countSync_mutex);
     pthread_cond_wait(&sort_go_cv, &countSync_mutex);
@@ -309,23 +271,17 @@ void *DataUARTHandler::sortIncomingData( void )
             currentDatap += ( sizeof(mmwData.header.platform) );      
             
             //if packet doesn't have correct header size (which is based on platform and SDK version), throw it away (does not include magicWord since it was already removed)
-	    if((((mmwData.header.version >> 24) & 0xFF) < 1) || (((mmwData.header.version >> 16) & 0xFF) < 1))  //check if SDK version is older than 1.1
-	    {
+            if((((mmwData.header.version >> 24) & 0xFF) < 1) || (((mmwData.header.version >> 16) & 0xFF) < 1)) { //check if SDK version is older than 1.1
                //ROS_INFO("mmWave device firmware detected version: 0x%8.8X", mmwData.header.version);
-	       headerSize = 28;
-	    }
-            else if((mmwData.header.platform & 0xFFFF) == 0x1443)
-	    {
-	       headerSize = 28;
-	    }
-	    else  // 1642
-	    {
-	       headerSize = 32;
-	    }
-            if(currentBufp->size() < headerSize)
-            {
-               sorterState = SWAP_BUFFERS;
-               break;
+                headerSize = 28;
+            } else if((mmwData.header.platform & 0xFFFF) == 0x1443) {
+                headerSize = 28;
+            } else {               // 1642
+                headerSize = 32;
+            }
+            if(currentBufp->size() < headerSize) {
+                sorterState = SWAP_BUFFERS;
+                break;
             }
             
             //get frameNumber (4 bytes)
@@ -345,11 +301,10 @@ void *DataUARTHandler::sortIncomingData( void )
             currentDatap += ( sizeof(mmwData.header.numTLVs) );
             
             //get subFrameNumber (4 bytes) (not used for XWR1443)
-            if((mmwData.header.platform & 0xFFFF) != 0x1443)
-	    {
+            if((mmwData.header.platform & 0xFFFF) != 0x1443) {
                memcpy( &mmwData.header.subFrameNumber, &currentBufp->at(currentDatap), sizeof(mmwData.header.subFrameNumber));
                currentDatap += ( sizeof(mmwData.header.subFrameNumber) );
-	    }
+            }
 
             //if packet lengths do not patch, throw it away
             if(mmwData.header.totalPacketLen == currentBufp->size() )
@@ -373,36 +328,26 @@ void *DataUARTHandler::sortIncomingData( void )
             memcpy( &mmwData.xyzQFormat, &currentBufp->at(currentDatap), sizeof(mmwData.xyzQFormat));
             currentDatap += ( sizeof(mmwData.xyzQFormat) );
             
-            RScan->header.seq = 0;
-            //RScan->header.stamp = (uint32_t) mmwData.header.timeCpuCycles;
-            RScan->header.frame_id = "base_radar_link";
+            // RScan->header.seq = 0;
+            // RScan->header.stamp = (uint64_t)(ros::Time::now());
+            // RScan->header.stamp = (uint32_t) mmwData.header.timeCpuCycles;
+            RScan->header.frame_id = "ti_mmwave_pcl";
             RScan->height = 1;
             RScan->width = mmwData.numObjOut;
             RScan->is_dense = 1;
             RScan->points.resize(RScan->width * RScan->height);
             
             // Calculate ratios for max desired elevation and azimuth angles
-            if ((maxAllowedElevationAngleDeg >= 0) && (maxAllowedElevationAngleDeg < 90))
-            {
+            if ((maxAllowedElevationAngleDeg >= 0) && (maxAllowedElevationAngleDeg < 90)) {
                 maxElevationAngleRatioSquared = tan(maxAllowedElevationAngleDeg * M_PI / 180.0);
                 maxElevationAngleRatioSquared = maxElevationAngleRatioSquared * maxElevationAngleRatioSquared;
-            }
-            else
-            {
-                maxElevationAngleRatioSquared = -1;
-            }
-            if ((maxAllowedAzimuthAngleDeg >= 0) && (maxAllowedAzimuthAngleDeg < 90))
-            {
-                maxAzimuthAngleRatio = tan(maxAllowedAzimuthAngleDeg * M_PI / 180.0);
-            }
-            else
-            {
-                maxAzimuthAngleRatio = -1;
-            }
+            } else maxElevationAngleRatioSquared = -1;
+            if ((maxAllowedAzimuthAngleDeg >= 0) && (maxAllowedAzimuthAngleDeg < 90)) maxAzimuthAngleRatio = tan(maxAllowedAzimuthAngleDeg * M_PI / 180.0);
+            else maxAzimuthAngleRatio = -1;
+
             //ROS_INFO("maxElevationAngleRatioSquared = %f", maxElevationAngleRatioSquared);
             //ROS_INFO("maxAzimuthAngleRatio = %f", maxAzimuthAngleRatio);
             //ROS_INFO("mmwData.numObjOut before = %d", mmwData.numObjOut);
-
 
             //set some parameters for pointcloud
             while( i < mmwData.numObjOut )
@@ -432,48 +377,56 @@ void *DataUARTHandler::sortIncomingData( void )
                 currentDatap += ( sizeof(mmwData.objOut.z) );
                 
                 //convert from Qformat to float(meters)
-                float temp[4];
+                float temp[6];
                 
                 temp[0] = (float) mmwData.objOut.x;
                 temp[1] = (float) mmwData.objOut.y;
                 temp[2] = (float) mmwData.objOut.z;
-                //temp[4] = //doppler 
+                temp[3] = (float) mmwData.objOut.dopplerIdx;
+
+                for (int j = 0; j < 4; j++) {
+                    if (temp[j] > 32767) temp[j] -= 65536;
+                    if (j < 3) temp[j] = temp[j] / pow(2 , mmwData.xyzQFormat);
+                }   
                 
-                for(int j = 0; j < 3; j++)
-                {
-                    if(temp[j] > 32767)
-                        temp[j] -= 65535;
-                    
-                    temp[j] = temp[j] / pow(2,mmwData.xyzQFormat);
-                 }   
-                 
+                // if (temp[3]!=0) std::cout<<temp[3]<<'\n';
+                temp[3] *= vvel;
+
                 // Convert intensity to dB
-                temp[3] = 10 * log10(mmwData.objOut.peakVal + 1);  // intensity
+
+                temp[4] = (float) mmwData.objOut.rangeIdx * vrange;
+                temp[5] = 10 * log10(mmwData.objOut.peakVal + 1);  // intensity
+                temp[6] = std::atan2(-temp[0], temp[1]) / M_PI * 180;
                 
                 // Map mmWave sensor coordinates to ROS coordinate system
                 RScan->points[i].x = temp[1];   // ROS standard coordinate system X-axis is forward which is the mmWave sensor Y-axis
                 RScan->points[i].y = -temp[0];  // ROS standard coordinate system Y-axis is left which is the mmWave sensor -(X-axis)
                 RScan->points[i].z = temp[2];   // ROS standard coordinate system Z-axis is up which is the same as mmWave sensor Z-axis
-                RScan->points[i].intensity = temp[3];
-               
+                RScan->points[i].intensity = temp[5];
+                
+                radarscan.header.frame_id = "ti_mmwave_radar";
+            	radarscan.header.stamp = ros::Time::now();
+
+                radarscan.target_id = i;
+                radarscan.x = temp[1];
+                radarscan.y = -temp[0];
+                radarscan.range = temp[4];
+                radarscan.doppler = temp[3];
+                radarscan.bearing = temp[6];
+                radarscan.intensity = temp[5];
+                
+
                 // Keep point if elevation and azimuth angles are less than specified max values
                 // (NOTE: The following calculations are done using ROS standard coordinate system axis definitions where X is forward and Y is left)
-                if (((maxElevationAngleRatioSquared == -1) ||
-                     (((RScan->points[i].z * RScan->points[i].z) / (RScan->points[i].x * RScan->points[i].x +
-                                                                    RScan->points[i].y * RScan->points[i].y)
-                      ) < maxElevationAngleRatioSquared)
-                    ) &&
-                    ((maxAzimuthAngleRatio == -1) || (fabs(RScan->points[i].y / RScan->points[i].x) < maxAzimuthAngleRatio)) &&
-		            (RScan->points[i].x != 0)
-                   )
-                {
+                if (((maxElevationAngleRatioSquared == -1) || (((RScan->points[i].z * RScan->points[i].z) / (RScan->points[i].x * RScan->points[i].x + RScan->points[i].y * RScan->points[i].y)) < maxElevationAngleRatioSquared)) && ((maxAzimuthAngleRatio == -1) || (fabs(RScan->points[i].y / RScan->points[i].x) < maxAzimuthAngleRatio)) && (RScan->points[i].x != 0)) {
                     //ROS_INFO("Kept point");
+                    radar_scan_pub.publish(radarscan);
+                    visualize(radarscan);
                     i++;
                 }
 
                 // Otherwise, remove the point
-                else
-                {
+                else {
                     //ROS_INFO("Removed point");
                     mmwData.numObjOut--;
                 }
@@ -487,7 +440,7 @@ void *DataUARTHandler::sortIncomingData( void )
             //ROS_INFO("DataUARTHandler Sort Thread: number of obj = %d", mmwData.numObjOut );
             
             DataUARTHandler_pub.publish(RScan);
-            
+
             sorterState = CHECK_TLV_TYPE;
             
             break;
@@ -752,4 +705,35 @@ void* DataUARTHandler::sortIncomingData_helper(void *context)
 void* DataUARTHandler::syncedBufferSwap_helper(void *context)
 {  
     return (static_cast<DataUARTHandler*>(context)->syncedBufferSwap());
+}
+
+void DataUARTHandler::visualize(const ti_mmwave_rospkg::RadarScan &msg){
+    visualization_msgs::Marker marker;
+
+    marker.header.frame_id = "ti_mmwave_markers";
+    marker.header.stamp = ros::Time::now();
+    marker.id = msg.target_id;
+    marker.type = visualization_msgs::Marker::SPHERE;
+    marker.lifetime = ros::Duration(tfr);
+    marker.action = marker.ADD;
+
+    marker.pose.position.x = msg.x;
+    marker.pose.position.y = msg.y;
+    marker.pose.position.z = 0;
+
+    marker.pose.orientation.x = 0;
+    marker.pose.orientation.y = 0;
+    marker.pose.orientation.z = 0;
+    marker.pose.orientation.w = 0;
+
+    marker.scale.x = .03;
+    marker.scale.y = .03;
+    marker.scale.z = .03;
+    
+    marker.color.a = 1;
+    marker.color.r = (int) 255 * msg.intensity;
+    marker.color.g = (int) 255 * msg.intensity;
+    marker.color.b = 1;
+
+    marker_pub.publish(marker);
 }

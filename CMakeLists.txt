@@ -17,7 +17,7 @@ find_package(catkin REQUIRED COMPONENTS
   pluginlib
 )
 
-find_package(Boost REQUIRED )
+find_package(Boost REQUIRED)
 
 find_package(Threads REQUIRED)
 
@@ -57,16 +57,16 @@ find_package(PCL 1.7.2 REQUIRED)
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   RadarScan.msg
-#)
+add_message_files(
+  FILES
+  RadarScan.msg
+)
 
 ## Generate services in the 'srv' folder
- add_service_files(
-   FILES
-   mmWaveCLI.srv
- )
+add_service_files(
+  FILES
+  mmWaveCLI.srv
+)
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -76,11 +76,11 @@ find_package(PCL 1.7.2 REQUIRED)
 # )
 
 ## Generate added messages and services with any dependencies listed here
- generate_messages(
-   DEPENDENCIES
-   std_msgs
-   sensor_msgs
- )
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+  sensor_msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -140,11 +140,13 @@ link_directories( ${PCL_LIBRARY_DIRS} )
 add_definitions(${PCL_DEFINITIONS})
 
 ## Declare a C++ library
- add_library(mmwave
-   src/mmWaveDataHdl.cpp
-   src/mmWaveCommSrv.cpp
-   src/DataHandlerClass.cpp
- )
+add_library(mmwave
+  src/mmWaveDataHdl.cpp
+  src/mmWaveCommSrv.cpp
+  src/DataHandlerClass.cpp
+  src/mmWaveQuickConfig.cpp
+  src/parameter_parser.cpp
+)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries

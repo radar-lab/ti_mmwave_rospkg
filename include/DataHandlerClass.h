@@ -1,46 +1,7 @@
-/*
- * DataHandlerClass.cpp
- * 
- * This file defines the DataUARTHandler class.
- * 
- *
- * Copyright (C) 2017 Texas Instruments Incorporated - http://www.ti.com/ 
- * 
- * 
- *  Redistribution and use in source and binary forms, with or without 
- *  modification, are permitted provided that the following conditions 
- *  are met:
- *
- *    Redistributions of source code must retain the above copyright 
- *    notice, this list of conditions and the following disclaimer.
- *
- *    Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the 
- *    documentation and/or other materials provided with the   
- *    distribution.
- *
- *    Neither the name of Texas Instruments Incorporated nor the names of
- *    its contributors may be used to endorse or promote products derived
- *    from this software without specific prior written permission.
- *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS 
- *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT 
- *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- *  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT 
- *  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, 
- *  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT 
- *  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- *  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
- *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE 
- *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
-*/
-
 #ifndef _DATA_HANDLER_CLASS_
 #define _DATA_HANDLER_CLASS_
 
-
+#include <ti_mmwave_rospkg/RadarScan.h>
 #include "mmWave.h"
 #include <iostream>
 #include <cstdio>
@@ -48,6 +9,16 @@
 #include <boost/shared_ptr.hpp>
 #include "ros/ros.h"
 #include "sensor_msgs/PointCloud2.h"
+#include <pthread.h>
+#include <algorithm>
+#include "pcl_ros/point_cloud.h"
+#include "sensor_msgs/PointField.h"
+#include "sensor_msgs/PointCloud2.h"
+#include "sensor_msgs/point_cloud2_iterator.h"
+#include <pcl/io/pcd_io.h>
+#include <pcl/point_types.h>
+#include <visualization_msgs/Marker.h>
+#include <cmath>
 #define COUNT_SYNC_MAX 2
 
 class DataUARTHandler{
@@ -86,7 +57,18 @@ public:
     mmwDataPacket mmwData;
 
 private:
-    
+
+    int nd;
+    float tfr;
+    int ntx;
+    float fs;
+    float fc;
+    float PRI;
+    float max_range;
+    float vrange;
+    float max_vel;
+    float vvel;
+
     /*Contains the name of the serial port*/
     char* dataSerialPort;
     
@@ -143,10 +125,13 @@ private:
     /*Sort incoming UART Data Thread*/
     void *sortIncomingData(void);
     
+    void visualize(const ti_mmwave_rospkg::RadarScan &msg);
+
     ros::NodeHandle* nodeHandle;
     
     ros::Publisher DataUARTHandler_pub;
-    
+    ros::Publisher radar_scan_pub;
+    ros::Publisher marker_pub;
 };
 
 #endif 
