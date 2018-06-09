@@ -58,12 +58,14 @@ public:
 
 private:
 
+    int nr;
     int nd;
-    float tfr;
     int ntx;
     float fs;
     float fc;
+    float BW;
     float PRI;
+    float tfr;
     float max_range;
     float vrange;
     float max_vel;

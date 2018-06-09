@@ -10,20 +10,21 @@ DataUARTHandler::DataUARTHandler(ros::NodeHandle* nh) : currentBufp(&pingPongBuf
     // Wait for parameters
     while(!nh->hasParam("/ti_mmwave/doppler_vel_resolution")){}
 
+    nh->getParam("/ti_mmwave/numAdcSamples", nr);
     nh->getParam("/ti_mmwave/numLoops", nd);
-    nh->getParam("/ti_mmwave/framePeriodicity", tfr);
     nh->getParam("/ti_mmwave/num_TX", ntx);
-    nh->getParam("/ti_mmwave/fs", fs);
-    nh->getParam("/ti_mmwave/fc", fc);
+    nh->getParam("/ti_mmwave/f_s", fs);
+    nh->getParam("/ti_mmwave/f_c", fc);
+    nh->getParam("/ti_mmwave/BW", BW);
     nh->getParam("/ti_mmwave/PRI", PRI);
+    nh->getParam("/ti_mmwave/t_fr", tfr);
     nh->getParam("/ti_mmwave/max_range", max_range);
     nh->getParam("/ti_mmwave/range_resolution", vrange);
     nh->getParam("/ti_mmwave/max_doppler_vel", max_vel);
     nh->getParam("/ti_mmwave/doppler_vel_resolution", vvel);
 
-    tfr *= 1e-3;
-    ROS_INFO("List of parameters:\nPRI: %f s\nFrame time: %f s\nfs: %f Hz\nNumber of chirps: %d\nMax range: %f m\nRange resolution: %f m\nMax Doppler: +-%f m/s\nDoppler resolution: %f m/s", \
-        PRI, tfr, fs, nd, max_range, vrange, max_vel/2, vvel);
+    ROS_INFO("\n\n==============================\nList of parameters\n==============================\nNumber of range samples: %d\nNumber of chirps: %d\nf_s: %.3f MHz\nf_c: %.3f GHz\nBandwidth: %.3f MHz\nPRI: %.3f us\nFrame time: %.3f ms\nMax range: %.3f m\nRange resolution: %.3f m\nMax Doppler: +-%.3f m/s\nDoppler resolution: %.3f m/s\n==============================\n", \
+        nr, nd, fs/1e6, fc/1e9, BW/1e6, PRI*1e6, tfr*1e3, max_range, vrange, max_vel/2, vvel);
 }
 
 /*Implementation of setUARTPort*/
@@ -376,8 +377,7 @@ void *DataUARTHandler::sortIncomingData( void )
                 memcpy( &mmwData.objOut.z, &currentBufp->at(currentDatap), sizeof(mmwData.objOut.z));
                 currentDatap += ( sizeof(mmwData.objOut.z) );
                 
-                //convert from Qformat to float(meters)
-                float temp[6];
+                float temp[7];
                 
                 temp[0] = (float) mmwData.objOut.x;
                 temp[1] = (float) mmwData.objOut.y;
@@ -389,15 +389,14 @@ void *DataUARTHandler::sortIncomingData( void )
                     if (j < 3) temp[j] = temp[j] / pow(2 , mmwData.xyzQFormat);
                 }   
                 
-                // if (temp[3]!=0) std::cout<<temp[3]<<'\n';
-                temp[3] *= vvel;
-
-                // Convert intensity to dB
+                temp[7] = temp[3] * vvel;
 
                 temp[4] = (float) mmwData.objOut.rangeIdx * vrange;
                 temp[5] = 10 * log10(mmwData.objOut.peakVal + 1);  // intensity
                 temp[6] = std::atan2(-temp[0], temp[1]) / M_PI * 180;
                 
+                uint16_t tmp = (uint16_t)(temp[3] + nd / 2);
+
                 // Map mmWave sensor coordinates to ROS coordinate system
                 RScan->points[i].x = temp[1];   // ROS standard coordinate system X-axis is forward which is the mmWave sensor Y-axis
                 RScan->points[i].y = -temp[0];  // ROS standard coordinate system Y-axis is left which is the mmWave sensor -(X-axis)
@@ -411,7 +410,8 @@ void *DataUARTHandler::sortIncomingData( void )
                 radarscan.x = temp[1];
                 radarscan.y = -temp[0];
                 radarscan.range = temp[4];
-                radarscan.doppler = temp[3];
+                radarscan.velocity = temp[7];
+                radarscan.doppler_bin = tmp;
                 radarscan.bearing = temp[6];
                 radarscan.intensity = temp[5];
                 
