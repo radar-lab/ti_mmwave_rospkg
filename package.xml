@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package>
   <name>ti_mmwave_rospkg</name>
-  <version>1.3.0</version>
-  <description>The ti_mmwave_rospkg package. Modified by Leo Zhang</description>
+  <version>2.0.0</version>
+  <description>The ti_mmwave_rospkg package. Publish messages with doppler information. Modified by Leo Zhang</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag --> 
   <!-- Example:  -->

@@ -30,10 +30,10 @@ int main(int argc, char **argv) {
       srv.request.comm.erase(std::remove(srv.request.comm.begin(), srv.request.comm.end(), '\r'), srv.request.comm.end());
       // Ignore comment lines (first non-space char is '%') or blank lines
       if (!(std::regex_match(srv.request.comm, std::regex("^\\s*%.*")) || std::regex_match(srv.request.comm, std::regex("^\\s*")))) {
-        ROS_INFO("mmWaveQuickConfig: Sending command: '%s'", srv.request.comm.c_str() );
+        // ROS_INFO("mmWaveQuickConfig: Sending command: '%s'", srv.request.comm.c_str() );
         if (client.call(srv)) {
           if (std::regex_search(srv.response.resp, std::regex("Done"))) {
-            ROS_INFO("mmWaveQuickConfig: Command successful (mmWave sensor responded with 'Done')");            
+            // ROS_INFO("mmWaveQuickConfig: Command successful (mmWave sensor responded with 'Done')");            
             p.params_parser(srv, nh);
           } else {
             ROS_ERROR("mmWaveQuickConfig: Command failed (mmWave sensor did not respond with 'Done')");
