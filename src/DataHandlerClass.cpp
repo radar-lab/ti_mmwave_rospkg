@@ -409,6 +409,7 @@ void *DataUARTHandler::sortIncomingData( void )
                 radarscan.target_id = i;
                 radarscan.x = temp[1];
                 radarscan.y = -temp[0];
+                radarscan.z = temp[2];
                 radarscan.range = temp[4];
                 radarscan.velocity = temp[7];
                 radarscan.doppler_bin = tmp;

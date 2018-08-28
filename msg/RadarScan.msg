@@ -2,6 +2,7 @@ Header header
 uint16 target_id
 float32 x
 float32 y
+float32 z
 float32 range
 float32 velocity
 uint16 doppler_bin
