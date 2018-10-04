@@ -406,7 +406,7 @@ void *DataUARTHandler::sortIncomingData( void )
                 radarscan.header.frame_id = "ti_mmwave_radar";
             	radarscan.header.stamp = ros::Time::now();
 
-                radarscan.target_id = i;
+                radarscan.point_id = i;
                 radarscan.x = temp[1];
                 radarscan.y = -temp[0];
                 radarscan.z = temp[2];
@@ -713,7 +713,7 @@ void DataUARTHandler::visualize(const ti_mmwave_rospkg::RadarScan &msg){
 
     marker.header.frame_id = "ti_mmwave_markers";
     marker.header.stamp = ros::Time::now();
-    marker.id = msg.target_id;
+    marker.id = msg.point_id;
     marker.type = visualization_msgs::Marker::SPHERE;
     marker.lifetime = ros::Duration(tfr);
     marker.action = marker.ADD;
