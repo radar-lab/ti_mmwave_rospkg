@@ -145,7 +145,7 @@ add_library(mmwave
   src/mmWaveCommSrv.cpp
   src/DataHandlerClass.cpp
   src/mmWaveQuickConfig.cpp
-  src/parameter_parser.cpp
+  src/ParameterParser.cpp
 )
 
 ## Add cmake target dependencies of the library

@@ -1,1 +1,4 @@
-reference/
+.vscode/
+src/.vscode
+cfg/archive
+launch/archive
