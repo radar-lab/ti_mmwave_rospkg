@@ -27,6 +27,11 @@ DataUARTHandler::DataUARTHandler(ros::NodeHandle* nh) : currentBufp(&pingPongBuf
         nr, nd, fs/1e6, fc/1e9, BW/1e6, PRI*1e6, tfr*1e3, max_range, vrange, max_vel/2, vvel);
 }
 
+void DataUARTHandler::setFrameID(char* myFrameID)
+{
+    frameID = myFrameID;
+}
+
 /*Implementation of setUARTPort*/
 void DataUARTHandler::setUARTPort(char* mySerialPort)
 {
@@ -332,7 +337,7 @@ void *DataUARTHandler::sortIncomingData( void )
             // RScan->header.seq = 0;
             // RScan->header.stamp = (uint64_t)(ros::Time::now());
             // RScan->header.stamp = (uint32_t) mmwData.header.timeCpuCycles;
-            RScan->header.frame_id = "ti_mmwave_pcl";
+            RScan->header.frame_id = frameID;
             RScan->height = 1;
             RScan->width = mmwData.numObjOut;
             RScan->is_dense = 1;
@@ -403,10 +408,10 @@ void *DataUARTHandler::sortIncomingData( void )
                 RScan->points[i].z = temp[2];   // ROS standard coordinate system Z-axis is up which is the same as mmWave sensor Z-axis
                 RScan->points[i].intensity = temp[5];
                 
-                radarscan.header.frame_id = "ti_mmwave_radar";
+                radarscan.header.frame_id = frameID;
             	radarscan.header.stamp = ros::Time::now();
 
-                radarscan.target_id = i;
+                radarscan.point_id = i;
                 radarscan.x = temp[1];
                 radarscan.y = -temp[0];
                 radarscan.z = temp[2];
@@ -711,9 +716,9 @@ void* DataUARTHandler::syncedBufferSwap_helper(void *context)
 void DataUARTHandler::visualize(const ti_mmwave_rospkg::RadarScan &msg){
     visualization_msgs::Marker marker;
 
-    marker.header.frame_id = "ti_mmwave_markers";
+    marker.header.frame_id = frameID;
     marker.header.stamp = ros::Time::now();
-    marker.id = msg.target_id;
+    marker.id = msg.point_id;
     marker.type = visualization_msgs::Marker::SPHERE;
     marker.lifetime = ros::Duration(tfr);
     marker.action = marker.ADD;

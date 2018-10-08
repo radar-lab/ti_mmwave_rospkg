@@ -16,13 +16,13 @@
 
 namespace ti_mmwave_rospkg {
 
-class parameter_parser : public nodelet::Nodelet{
+class ParameterParser : public nodelet::Nodelet{
 
   public:
   	
-  	parameter_parser();
-  	void params_parser(ti_mmwave_rospkg::mmWaveCLI &srv, ros::NodeHandle &n);
-	void cal_params(ros::NodeHandle &nh);
+  	ParameterParser();
+  	void ParamsParser(ti_mmwave_rospkg::mmWaveCLI &srv, ros::NodeHandle &n);
+	void CalParams(ros::NodeHandle &nh);
 
   private:
     
