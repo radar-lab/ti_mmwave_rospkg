@@ -4,6 +4,6 @@
   <node pkg="tf" type="static_transform_publisher" name="radar_baselink_0" args="0 -1 0 0 0 0 ti_mmwave_pcl ti_mmwave_0 100"/>
   <node pkg="tf" type="static_transform_publisher" name="radar_baselink_1" args="0 0 0 0 0 0 ti_mmwave_pcl ti_mmwave_1 100"/>
   <!-- Launch Rviz with pre-defined configuration to view mmWave sensor detected object data (color by intensity) -->
-  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find ti_mmwave_rospkg)/launch/ti_mmwave_multi.rviz"/>
+  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find ti_mmwave_rospkg)/launch/rviz/ti_mmwave_multi.rviz"/>
 
 </launch>

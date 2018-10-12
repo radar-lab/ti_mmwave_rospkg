@@ -16,19 +16,19 @@ Initially derived from TI's origin ROS package in Industrial Toolbox 2.3.0 (new 
 ```
 TI mmWave AWR1443BOOST
 TI mmWave AWR1642BOOST
-TI mmWave AWR1642BOOST ES2.0 EVM (not tested)
+TI mmWave AWR1642BOOST ES2.0/3.0 EVM (not tested)
 TI mmWave AWR1642BOOST ES2.0 EVM
 ```
 ---
 ### Quick start guide (AWR1642BOOST ES2.0 EVM):
 1. Mount AWR1642BOOST ES2.0 EVM (as below), connect 5V/2.5A power supply and connect a micro-USB cable to host Ubuntu with [ROS Kinetic](http://wiki.ros.org/kinetic).
    
-![](./auxiliary/mounting.jpg =250x)
+![](https://github.com/radar-lab/ti_mmwave_rospkg/raw/master/auxiliary/mounting.jpg "AWR1642 Mounting")
 
-2. Download SDK 2.0 or above from [here](http://www.ti.com/tool/MMWAVE-SDK) and use [UNIFLASH](http://www.ti.com/tool/UNIFLASH) to flash xwr16xx_mmw_demo.bin to your device. **Do not forget SOP2 jumper when flashing.**
+2. Download SDK 2.0 or above (suggested SDK 2.1) from [here](http://www.ti.com/tool/MMWAVE-SDK) and use [UNIFLASH](http://www.ti.com/tool/UNIFLASH) to flash xwr16xx_mmw_demo.bin to your device. **Do not forget SOP2 jumper when flashing.**
 
 Note:
-AWR1642 ES1.0 (usually purchased before May 2018) uses SDK ver. 1.2. AWR1642 ES2.0 (usually purchased after May 2018) uses SDK ver. 2.0. Same applies to AWR1443. (You can refer to [this thread](https://e2e.ti.com/support/sensors/f/1023/t/692195?tisearch=e2e-sitesearch&keymatch=%20user:356347))
+AWR1642 ES1.0 (usually purchased before May 2018) uses SDK 1.2. AWR1642 ES2.0 (usually purchased after May 2018) uses SDK 2.0. Same applies to AWR1443. (You can refer to [this thread](https://e2e.ti.com/support/sensors/f/1023/t/692195?tisearch=e2e-sitesearch&keymatch=%20user:356347))
 
 3. Clone this repo and ROS serial onto your `<workspace dir>/src`:
 
@@ -78,8 +78,8 @@ intensity: 13.6172780991  # Radar measured intensity (in dB)
 ```
 ---
 ### Multiple devices support (dual AWR1642 ES2.0 EVM):
-1. Connect two devices and try `ll /dev/serial/by-id`. In this case, `/dev/ttyACM3` should shown.
-2. Launch first device:
+1. Connect two devices and try `ll /dev/serial/by-id` or `ls /dev`. In this case, `/dev/ttyACM0` to `/dev/ttyACM3` should shown.
+2. To avoid serial port confliction, you need to launch devices separately. So for first device:
 
 ```
 roslaunch ti_mmwave_rospkg multi_1642_0.launch 
