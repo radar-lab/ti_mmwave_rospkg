@@ -10,7 +10,8 @@ Initially derived from TI's origin ROS package in Industrial Toolbox 2.3.0 (new 
 1. Added all radar parameters from calculations and can be read from `rosparam get`.
 2. Added Doppler data from detecting targets and form a customized ROS message `/ti_mmwave/radar_scan`.
 3. Added support for multiple radars working together.
-4. Working with xWR1443 and xWR1642 ES1.0 and ES2.0 (ES1.0 is deprecated from TI)
+4. Added support for camera overlay (for sensor fusion).
+5. Working with xWR1443 and xWR1642 ES1.0 and ES2.0 (ES1.0 is deprecated from TI)
 ---
 ### Available devices:
 ```
@@ -79,33 +80,43 @@ intensity: 13.6172780991  # Radar measured intensity (in dB)
 ---
 ### Multiple devices support (dual AWR1642 ES2.0 EVM):
 1. Connect two devices and try `ll /dev/serial/by-id` or `ls /dev`. In this case, `/dev/ttyACM0` to `/dev/ttyACM3` should shown.
-2. To avoid serial port confliction, you need to launch devices separately. So for first device:
+2. To avoid serial port confliction, you need to launch devices separately. So for first device (it will open rviz):
 
 ```
 roslaunch ti_mmwave_rospkg multi_1642_0.launch 
 ```
-3. Launch second device:
+3. Change radars' location in first three arguments `<node pkg="tf" type="static_transform_publisher" name="radar_baselink_0" args="0 -1 0 0 0 0 ti_mmwave_pcl ti_mmwave_0 100"/>` (stands for x,y,z for positions) in launch file `multi_1642_1.launch`. And launch second device:
 
 ```
 roslaunch ti_mmwave_rospkg multi_1642_1.launch 
-```
-4. Change radars' location in first three arguments (stands for x,y,z for positions) in `args` in launch file `multi_tf_rviz.launch`:
-
-```
- <node pkg="tf" type="static_transform_publisher" name="radar_baselink_0" args="0 -1 0 0 0 0 ti_mmwave_pcl ti_mmwave_0 100"/>
-```
-5. Show point clouds using rviz:
-
-```
-roslaunch ti_mmwave_rospkg multi_tf_rviz.launch
 ```
 
 Note: As serial connection and the original code, you need to launch devices separately using different launch files.
 
 ---
+### Camera overlay support (working with USB camera or CV camera):
+1. Download and build USB camera repo [here](https://github.com/radar-lab/usb_webcam`). And set parameters of camera in `<usb_webcam dir>/launch/usb_webcam.launch`.
+2. To test the device image working, try:
+```
+roslaunch usb_webcam usb_webcam.launch
+rosrun rqt_image_view rqt_image_view  
+```
+3. Make sure you have done [ROS camera calibration](http://wiki.ros.org/camera_calibration) and create a `*.yaml` configuration file accordingly.
+4. Launch radar-camera system using:
+```
+roslaunch ti_mmwave_rospkg camera_overlay.launch
+```
+
+---
 ### Changelog:
 
 ```
+v3.2.0
+Added camera overlay support.
+
+v3.1.0
+Strengthened code.
+
 v3.0.0
 Added README.
 Improved rviz looking for point cloud data.

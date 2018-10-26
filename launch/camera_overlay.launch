@@ -1,0 +1,40 @@
+<launch>
+  <arg name="device" value="1642" doc="TI mmWave sensor device type [1443, 1642]"/>
+  <arg name="config" value="2d" doc="TI mmWave sensor device configuration [3d_best_range_res (not supported by 1642 EVM), 2d_best_range_res]"/>
+  <arg name="max_allowed_elevation_angle_deg" default="90" doc="Maximum allowed elevation angle in degrees for detected object data [0 > value >= 90]}"/>
+  <arg name="max_allowed_azimuth_angle_deg" default="90" doc="Maximum allowed azimuth angle in degrees for detected object data [0 > value >= 90]}"/>
+
+  <node name="usb_webcam" pkg="usb_webcam" type="usb_webcam_node" output="screen" >
+    <param name="video_device" value="/dev/video1" />
+    <param name="camera_info_url" value="file:///home/leo/workspace/usb_webcam/src/cfg/elp-usb8mp02g-l36.yaml" />
+    <param name="image_width" value="640" />
+    <param name="image_height" value="480" />
+    <param name="pixel_format" value="yuyv" />
+    <param name="camera_frame_id" value="usb_webcam" />
+    <param name="io_method" value="mmap"/>
+    <param name="framerate" value="30" />
+    <param name="autoexposure" value="true" />
+    <param name="autofocus" value="true" />
+  </node>
+
+  <node pkg="ti_mmwave_rospkg" type="ti_mmwave_rospkg" name="ti_mmwave" ns="radar_0" output="screen">
+    <param name="command_port" value="/dev/ttyACM0"  />
+    <param name="command_rate" value="115200"   />
+    <param name="data_port" value="/dev/ttyACM1"  />
+    <param name="data_rate" value="921600"   />
+    <param name="max_allowed_elevation_angle_deg" value="$(arg max_allowed_elevation_angle_deg)"   />
+    <param name="max_allowed_azimuth_angle_deg" value="$(arg max_allowed_azimuth_angle_deg)"   />
+    <param name="frame_id" value="/ti_mmwave_0"/>
+    <remap from="/ti_mmwave/radar_scan_pcl" to="/ti_mmwave/radar_scan_pcl_0"/>
+  </node>
+
+  <node pkg="ti_mmwave_rospkg" type="mmWaveQuickConfig" name="mmWaveQuickConfig" ns="radar_0" args="$(find ti_mmwave_rospkg)/cfg/1642es2_short_range.cfg" output="screen" />
+
+  <node pkg="tf" type="static_transform_publisher" name="radar_baselink" args="0 0 0 0 0 0 ti_mmwave_pcl ti_mmwave_0 100"/>
+
+  <node pkg="tf" type="static_transform_publisher" name="camera_baselink" args="0 0 1 -1.5707963267948966 0 -1.5707963267948966 ti_mmwave_pcl usb_webcam 100"/>
+
+  <!-- Launch Rviz with pre-defined configuration to view mmWave sensor detected object data (color by intensity) -->
+  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find ti_mmwave_rospkg)/launch/rviz/ti_mmwave_camera_overlay.rviz"/>
+
+</launch>
