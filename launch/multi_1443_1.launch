@@ -25,4 +25,6 @@
   <!-- mmWaveQuickConfig node (terminates after configuring mmWave sensor) -->
   <node pkg="ti_mmwave_rospkg" type="mmWaveQuickConfig" name="ti_mmwave_config" ns="radar_1" args="$(find ti_mmwave_rospkg)/cfg/1443es1_short_range.cfg" output="screen" />
 
+  <node pkg="tf" type="static_transform_publisher" name="radar_baselink_1" args="0 1 0 0 0 0 ti_mmwave_pcl ti_mmwave_1 100"/>
+  
 </launch>
