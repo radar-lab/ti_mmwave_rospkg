@@ -1,7 +1,3 @@
-<!--
-  This file will launch rViz along with the mmWave sensor node and configure a TI mmWave 1642 sensor using a 2D config
- -->
-
 <launch>
 
   <!-- Input arguments -->
@@ -22,7 +18,7 @@
   </node>
   
   <!-- mmWaveQuickConfig node (terminates after configuring mmWave sensor) -->
-  <node pkg="ti_mmwave_rospkg" type="mmWaveQuickConfig" name="mmWaveQuickConfig" args="$(find ti_mmwave_rospkg)/cfg/1443es1_short_range.cfg" output="screen" />
+  <node pkg="ti_mmwave_rospkg" type="mmWaveQuickConfig" name="mmWaveQuickConfig" args="$(find ti_mmwave_rospkg)/cfg/1443es1_short_range_3d.cfg" output="screen" />
 
   <!-- Static transform from map to base_radar_link for visualization of stand-alone mmWave sensor using Rviz -->
   <node pkg="tf" type="static_transform_publisher" name="static_tf_map_to_base_radar_link" args="0 0 0 0 0 0 ti_mmwave_pcl ti_mmwave 30"/>

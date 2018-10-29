@@ -111,6 +111,9 @@ roslaunch ti_mmwave_rospkg camera_overlay.launch
 ### Changelog:
 
 ```
+v3.2.1
+Support camera overlay over 3D 1443s.
+
 v3.2.0
 Added camera overlay support.
 
