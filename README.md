@@ -44,10 +44,12 @@ catkin_make && source devel/setup.bash
 echo "source <workspace_dir>/devel/setup.bash" >> ~/.bashrc
 ```
 
-5. Launch AWR1642 short range:
+5. Launch AWR1642 short range config:
 ```
 roslaunch ti_mmwave_rospkg 1642es2_short_range.launch
 ```
+
+Note: If you want to build your own config, use [mmWave Demo Visualizer](https://dev.ti.com/mmwavedemovisualizer) and link the launch file to the config.
 
 6. ROS topics can be accessed as follows:
 ```
@@ -66,16 +68,16 @@ header:
   stamp: 
     secs: 1538888235
     nsecs: 712113897
-  frame_id: "/ti_mmwave"  # Frame ID used for multi-sensor scenarios
+  frame_id: "ti_mmwave"   # Frame ID used for multi-sensor scenarios
 point_id: 17              # Point ID of the detecting frame (Every frame starts with 0)
-x: 8.650390625            # Point x coordinates (front from antenna)
-y: 6.92578125             # Point y coordinates (left/right from antenna, right positive)
-z: 0.0                    # Point y coordinates (up/down from antenna, up positive)
-range: 11.067276001       # Radar measured range
-velocity: 0.0             # Radar measured range rate
+x: 8.650390625            # Point x coordinates in m (front from antenna)
+y: 6.92578125             # Point y coordinates in m (left/right from antenna, right positive)
+z: 0.0                    # Point z coordinates in m (up/down from antenna, up positive)
+range: 11.067276001       # Radar measured range in m
+velocity: 0.0             # Radar measured range rate in m/s
 doppler_bin: 8            # Doppler bin location of the point (total bins = num of chirps)
-bearing: 38.6818885803    # Radar measured angle (right positive)
-intensity: 13.6172780991  # Radar measured intensity (in dB)
+bearing: 38.6818885803    # Radar measured angle in degrees (right positive)
+intensity: 13.6172780991  # Radar measured intensity in dB
 ```
 ---
 ### Multiple devices support (dual AWR1642 ES2.0 EVM):
