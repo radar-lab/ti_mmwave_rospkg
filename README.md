@@ -1,8 +1,8 @@
 # TI mmWave ROS Package (Customized)
 
-### Auhor and Maintainer: Leo Zhang
-### Organization: University of Arizona
-### Email: dr.leo.zhang@outlook.com
+#### Auhor and Maintainer: Leo Zhang
+#### Organization: University of Arizona
+#### Email: dr.leo.zhang@outlook.com
 ---
 Initially derived from TI's origin ROS package in Industrial Toolbox 2.3.0 (new version available [Industrial Toolbox 2.5.2](http://dev.ti.com/tirex/#/?link=Software%2FmmWave%20Sensors%2FIndustrial%20Toolbox)).
 
@@ -22,9 +22,11 @@ TI mmWave AWR1642BOOST ES2.0 EVM
 ```
 ---
 ### Quick start guide (AWR1642BOOST ES2.0 EVM):
-1. Mount AWR1642BOOST ES2.0 EVM (as below), connect 5V/2.5A power supply and connect a micro-USB cable to host Ubuntu with [ROS Kinetic](http://wiki.ros.org/kinetic).
+1. Mount AWR1642BOOST ES2.0 EVM (as below), connect 5V/2.5A power supply and connect a micro-USB cable to host Ubuntu 16.04 LTS with [ROS Kinetic](http://wiki.ros.org/kinetic).
    
 ![](https://github.com/radar-lab/ti_mmwave_rospkg/raw/master/auxiliary/mounting.jpg "AWR1642 Mounting")
+
+Note: Tested with Ubuntu 16.04 LTS with ROS Kinectic and Ubuntu 18.04 LTS with [ROS Melodic](http://wiki.ros.org/melodic)
 
 2. Download SDK 2.0 or above (suggested SDK 2.1) from [here](http://www.ti.com/tool/MMWAVE-SDK) and use [UNIFLASH](http://www.ti.com/tool/UNIFLASH) to flash xwr16xx_mmw_demo.bin to your device. **Do not forget SOP2 jumper when flashing.**
 
@@ -44,18 +46,26 @@ catkin_make && source devel/setup.bash
 echo "source <workspace_dir>/devel/setup.bash" >> ~/.bashrc
 ```
 
-5. Launch AWR1642 short range config:
+5. Enable command and data ports on Linux:
+```
+sudo chmod 666 /dev/ttyACM0
+sudo chmod 666 /dev/ttyACM1
+```
+Note: If multiple sensors are used, enable additional ports `/dev/ttyACM2` and `/dev/ttyACM3`, etc. the same as this step.
+
+6. Launch AWR1642 short range config:
 ```
 roslaunch ti_mmwave_rospkg 1642es2_short_range.launch
 ```
 
 Note: If you want to build your own config, use [mmWave Demo Visualizer](https://dev.ti.com/mmwavedemovisualizer) and link the launch file to the config.
 
-6. ROS topics can be accessed as follows:
+7. ROS topics can be accessed as follows:
 ```
+rostopic list
 rostopic echo /ti_mmwave/radar_scan
 ```
-7. ROS parameters can be accessed as follows:
+8. ROS parameters can be accessed as follows:
 ```
 rosparam list
 rosparam get /ti_mmwave/max_doppler_vel
@@ -79,6 +89,27 @@ doppler_bin: 8            # Doppler bin location of the point (total bins = num 
 bearing: 38.6818885803    # Radar measured angle in degrees (right positive)
 intensity: 13.6172780991  # Radar measured intensity in dB
 ```
+---
+### Troubleshooting
+1.
+```
+mmWaveCommSrv: Failed to open User serial port with error: IO Exception (13): Permission denied
+mmWaveCommSrv: Waiting 20 seconds before trying again...
+```
+This happens when serial port is called without superuser permission, do the following steps:
+```
+sudo chmod 666 /dev/ttyACM0
+sudo chmod 666 /dev/ttyACM1
+```
+2.
+```
+mmWaveQuickConfig: Command failed (mmWave sensor did not respond with 'Done')
+mmWaveQuickConfig: Response: 'sensorStop
+'?`????`????`???~' is not recognized as a CLI command
+mmwDemo:/>'
+```
+When this happens, re-run the command you send to sensor. If it continues, shut down and restart the sensor.
+
 ---
 ### Multiple devices support (dual AWR1642 ES2.0 EVM):
 1. Connect two devices and try `ll /dev/serial/by-id` or `ls /dev`. In this case, `/dev/ttyACM0` to `/dev/ttyACM3` should shown.
@@ -113,6 +144,9 @@ roslaunch ti_mmwave_rospkg camera_overlay.launch
 ### Changelog:
 
 ```
+v3.2.2
+Fix bugs and update README.
+
 v3.2.1
 Support camera overlay over 3D 1443s.
 
