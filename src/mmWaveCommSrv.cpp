@@ -50,7 +50,7 @@ bool mmWaveCommSrv::commSrv_cb(mmWaveCLI::Request &req , mmWaveCLI::Response &re
    /*Read any previous pending response(s)*/
    while (mySerialObject.available() > 0)
    {
-      mySerialObject.readline(res.resp, 128, ":/>");
+      mySerialObject.readline(res.resp, 1024, ":/>");
       ROS_INFO("mmWaveCommSrv: Received (previous) response from sensor: '%s'", res.resp.c_str());
       res.resp = "";
    }
@@ -61,7 +61,7 @@ bool mmWaveCommSrv::commSrv_cb(mmWaveCLI::Request &req , mmWaveCLI::Response &re
    int bytesSent = mySerialObject.write(req.comm.c_str());
 
    /*Read output from mmwDemo*/
-   mySerialObject.readline(res.resp, 128, ":/>");
+   mySerialObject.readline(res.resp, 1024, ":/>");
    ROS_INFO("mmWaveCommSrv: Received response from sensor: '%s'", res.resp.c_str());
 
    mySerialObject.close();

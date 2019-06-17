@@ -4,6 +4,11 @@
 #### Organization: University of Arizona
 #### Email: dr.leo.zhang@outlook.com
 ---
+### Most recent change:
+
+Add support for XWR18XX devices. SDK version: 3.2.0.4.
+
+---
 Initially derived from TI's origin ROS package in Industrial Toolbox 2.3.0 (new version available [Industrial Toolbox 2.5.2](http://dev.ti.com/tirex/#/?link=Software%2FmmWave%20Sensors%2FIndustrial%20Toolbox)).
 
 ### Differences from origin TI's version:
@@ -19,6 +24,7 @@ TI mmWave AWR1443BOOST
 TI mmWave AWR1642BOOST
 TI mmWave AWR1642BOOST ES2.0/3.0 EVM (not tested)
 TI mmWave AWR1642BOOST ES2.0 EVM
+TI mmWave AWR1843BOOST ES1.0 EVM
 ```
 ---
 ### Quick start guide (AWR1642BOOST ES2.0 EVM):
@@ -70,6 +76,9 @@ rostopic echo /ti_mmwave/radar_scan
 rosparam list
 rosparam get /ti_mmwave/max_doppler_vel
 ```
+
+Note: AWR1843 requires SDK 3.2.0.4, which has different output format. The later release will improve this part.
+
 ---
 ### Message format:
 ```
@@ -144,6 +153,10 @@ roslaunch ti_mmwave_rospkg camera_overlay.launch
 ### Changelog:
 
 ```
+v3.3.0
+
+Add support for XWR18XX devices. SDK version: 3.2.0.4.
+
 v3.2.2
 Fix bugs and update README.
 
