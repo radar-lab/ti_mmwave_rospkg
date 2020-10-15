@@ -8,7 +8,3 @@ float32 velocity
 uint16 doppler_bin
 float32 bearing
 float32 intensity
-float32 range_sph
-float32 azimut
-float32 elevation
-float32 velocity_sph
