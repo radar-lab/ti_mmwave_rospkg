@@ -19,6 +19,8 @@
 #include <pcl/point_types.h>
 #include <visualization_msgs/Marker.h>
 #include <cmath>
+#include <pcl_conversions/pcl_conversions.h>
+
 #define COUNT_SYNC_MAX 2
 
 class DataUARTHandler{
