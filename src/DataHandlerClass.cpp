@@ -348,10 +348,9 @@ void *DataUARTHandler::sortIncomingData( void )
                 mmwData.numObjOut = mmwData.header.numDetectedObj;
             }
             
-            // RScan->header.seq = 0;
-            // RScan->header.stamp = (uint64_t)(ros::Time::now());
-            // RScan->header.stamp = (uint32_t) mmwData.header.timeCpuCycles;
+            RScan->header.stamp = ros::Time::now();
             RScan->header.frame_id = frameID;
+            
             RScan->height = 1;
             RScan->width = mmwData.numObjOut;
             RScan->is_dense = 1;
