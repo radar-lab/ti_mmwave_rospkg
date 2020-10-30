@@ -5,35 +5,35 @@
  * This file contains various defines used within this package.
  *
  *
- * Copyright (C) 2017 Texas Instruments Incorporated - http://www.ti.com/
- *
- *
- *  Redistribution and use in source and binary forms, with or without
- *  modification, are permitted provided that the following conditions
+ * Copyright (C) 2017 Texas Instruments Incorporated - http://www.ti.com/ 
+ * 
+ * 
+ *  Redistribution and use in source and binary forms, with or without 
+ *  modification, are permitted provided that the following conditions 
  *  are met:
  *
- *    Redistributions of source code must retain the above copyright
+ *    Redistributions of source code must retain the above copyright 
  *    notice, this list of conditions and the following disclaimer.
  *
  *    Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the
+ *    notice, this list of conditions and the following disclaimer in the 
+ *    documentation and/or other materials provided with the   
  *    distribution.
  *
  *    Neither the name of Texas Instruments Incorporated nor the names of
  *    its contributors may be used to endorse or promote products derived
  *    from this software without specific prior written permission.
  *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS 
+ *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT 
  *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- *  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- *  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- *  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT 
+ *  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, 
+ *  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT 
  *  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
  *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- *  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ *  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
+ *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE 
  *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
 */
@@ -77,13 +77,13 @@ enum MmwDemo_Output_TLV_Types
     MMWDEMO_OUTPUT_MSG_MAX
 };
 
-enum SorterState{ READ_HEADER,
+enum SorterState{ READ_HEADER, 
     CHECK_TLV_TYPE,
-    READ_OBJ_STRUCT,
-    READ_LOG_MAG_RANGE,
-    READ_NOISE,
-    READ_AZIMUTH,
-    READ_DOPPLER,
+    READ_OBJ_STRUCT, 
+    READ_LOG_MAG_RANGE, 
+    READ_NOISE, 
+    READ_AZIMUTH, 
+    READ_DOPPLER, 
     READ_STATS,
     SWAP_BUFFERS,
     READ_SIDE_INFO};
@@ -98,13 +98,13 @@ struct MmwDemo_output_message_header_t
 
         /*! @brief   platform type */
         uint32_t    platform;
-
+        
         /*! @brief   Frame number */
         uint32_t    frameNumber;
 
         /*! @brief   Time in CPU cycles when the message was created. For XWR16xx: DSP CPU cycles, for XWR14xx: R4F CPU cycles */
         uint32_t    timeCpuCycles;
-
+        
         /*! @brief   Number of detected objects */
         uint32_t    numDetectedObj;
 
@@ -125,7 +125,7 @@ struct MmwDemo_DetectedObj
         int16_t  y;             /*!< @brief y - coordinate in meters. Q format depends on the range resolution */
         int16_t  z;             /*!< @brief z - coordinate in meters. Q format depends on the range resolution */
     };
-
+    
 // Detected object structures for mmWave SDK 3.x (DPIF_PointCloudCartesian_t and DPIF_PointCloudSideInfo_t)
 
 /**
@@ -165,53 +165,26 @@ int16_t noise;
 }DPIF_PointCloudSideInfo;
 
 
-/**
- * @brief
- *  Point cloud definition in spherical coordinate system
- */
-typedef struct DPIF_PointCloudSpherical_t
-{
-    /*! @brief     Range in meters */
-    float  range;
-
-    /*! @brief     Azimuth angle in degrees in the range [-90,90],
-     *             where positive angle represents the right hand side as viewed
-     *             from the sensor towards the scene and negative angle
-     *             represents left hand side */
-    float  azimuthAngle;
-
-    /*! @brief     Elevation angle in degrees in the range [-90,90],
-                   where positive angle represents above the sensor and negative
-     *             below the sensor */
-    float  elevAngle;
-
-    /*! @brief  Doppler velocity estimate in m/s. Positive velocity means target
-     *          is moving away from the sensor and negative velocity means target
-     *          is moving towards the sensor. */
-    float    velocity;
-}DPIF_PointCloudSpherical;
-
-typedef volatile struct DPIF_CFARDetList_t
-{
-    uint16_t   rangeIdx;   /*!< Range index */
-    uint16_t   dopplerIdx; /*!< Doppler index */
-    int16_t    snr;        /*!< Signal to noise power ratio in steps of 0.1 dB */
-    int16_t    noise;      /*!< Noise level in steps of 0.1 dB */
-} DPIF_CFARDetList;
-
 struct mmwDataPacket{
 MmwDemo_output_message_header_t header;
 uint16_t numObjOut;
 uint16_t xyzQFormat; // only used for SDK 1.x and 2.x
 MmwDemo_DetectedObj objOut; // only used for SDK 1.x and 2.x
 
-DPIF_PointCloudCartesian_t objOut_cartes; // used for SDK 3.x   (x, y, z, velocity)
+DPIF_PointCloudCartesian_t newObjOut; // used for SDK 3.x
 DPIF_PointCloudSideInfo_t sideInfo; // used for SDK 3.x
-DPIF_PointCloudSpherical_t objOut_spher;   // used for SDK 3.x (range, azimuthAngle, elevAngle, velocity)
-DPIF_CFARDetList_t detList;
-
 };
 
 const uint8_t magicWord[8] = {2, 1, 4, 3, 6, 5, 8, 7};
 
 #endif
+
+
+
+
+
+
+
+
+
+
