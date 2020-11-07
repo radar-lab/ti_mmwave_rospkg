@@ -245,8 +245,8 @@ void *DataUARTHandler::sortIncomingData( void )
     ti_mmwave_rospkg::RadarScan radarscan;
 
     nav_msgs::Odometry odom;
-    odom.header.frame_id = "REP-105 radar frame";
-    odom.child_frame_id = "REP-105 imu frame";
+    odom.header.frame_id = "odom";
+    odom.child_frame_id = "base_link";
 
     //wait for first packet to arrive
     pthread_mutex_lock(&countSync_mutex);
@@ -485,10 +485,16 @@ void *DataUARTHandler::sortIncomingData( void )
                     radarscan.azimuth = azimuth*180/PI;
 
                     //Compute the linear velocity of the robot and wrtie it in odom msg
-                    odom.twist.twist.linear.y = -radarscan.velocity/(cos(elevation)*cos(azimuth));
+                    odom.header.stamp = ros::Time::now();
+                    if (radarscan.range > 0.11)
+                    {
+                      odom.twist.twist.linear.x = -radarscan.velocity*(radarscan.range/mmwData.newObjOut.y);
+                      odom.twist.covariance[1,1] = vvel*sqrt(pow(PI,2)*(pow(sin(elevation),2)*pow(cos(azimuth),4)
+                                                    +pow(cos(elevation),4)*pow(sin(azimuth),2))+144*pow(cos(elevation),4)*pow(cos(azimuth),4))
+                                                    /(12*abs(pow(cos(azimuth),3)*pow(cos(elevation),3)));  
+                      odom_pub.publish(odom);
+                    }
 
-                    //Publish odometry message
-                    odom_pub.publish(odom);
 
                     // For SDK 3.x, intensity is replaced by snr in sideInfo and is parsed in the READ_SIDE_INFO code
                 }
