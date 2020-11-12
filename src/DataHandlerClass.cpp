@@ -489,9 +489,9 @@ void *DataUARTHandler::sortIncomingData( void )
                     if (radarscan.range > 0.11)
                     {
                       odom.twist.twist.linear.x = -radarscan.velocity*(radarscan.range/mmwData.newObjOut.y);
-                      odom.twist.covariance[1,1] = vvel*sqrt(pow(PI,2)*(pow(sin(elevation),2)*pow(cos(azimuth),4)
+                      odom.twist.covariance[1,1] = sqrt(vvel*sqrt(pow(PI,2)*(pow(sin(elevation),2)*pow(cos(azimuth),4)
                                                     +pow(cos(elevation),4)*pow(sin(azimuth),2))+144*pow(cos(elevation),4)*pow(cos(azimuth),4))
-                                                    /(12*abs(pow(cos(azimuth),3)*pow(cos(elevation),3)));  
+                                                    /(12*abs(pow(cos(azimuth),3)*pow(cos(elevation),3))));  
                       odom_pub.publish(odom);
                     }
 
