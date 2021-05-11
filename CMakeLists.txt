@@ -21,6 +21,10 @@ find_package(Boost REQUIRED)
 
 find_package(Threads REQUIRED)
 
+# Set target C++ standard and required compiler features
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 find_package(PCL 1.7.2 REQUIRED)
 
 ## System dependencies are found with CMake's conventions
