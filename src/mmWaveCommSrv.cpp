@@ -19,6 +19,13 @@ void mmWaveCommSrv::onInit()
     ROS_INFO("mmWaveCommSrv: command_port = %s", mySerialPort.c_str());
     ROS_INFO("mmWaveCommSrv: command_rate = %d", myBaudRate);
 
+    /* Write one newline to get comms to known state, (rather hacky) */
+    serial::Serial mySerialObject("", myBaudRate, serial::Timeout::simpleTimeout(1000));
+    mySerialObject.setPort(mySerialPort.c_str());
+    mySerialObject.open();
+    mySerialObject.write("\n");
+    mySerialObject.close();
+
     commSrv = private_nh.advertiseService("/mmWaveCLI", &mmWaveCommSrv::commSrv_cb, this);
 
     NODELET_DEBUG("mmWaveCommsrv: Finished onInit function");
@@ -44,7 +51,7 @@ bool mmWaveCommSrv::commSrv_cb(mmWaveCLI::Request &req , mmWaveCLI::Response &re
         } catch (std::exception &e2) {
             ROS_ERROR("mmWaveCommSrv: Failed second time to open User serial port, error: %s", e1.what());
             NODELET_ERROR("mmWaveCommSrv: Port could not be opened. Port is \"%s\" and baud rate is %d", mySerialPort.c_str(), myBaudRate);
-        return false;
+            return false;
         }
     }
 
