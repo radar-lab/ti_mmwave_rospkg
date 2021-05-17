@@ -59,9 +59,9 @@ sudo chmod 666 /dev/ttyACM1
 ```
 Note: If multiple sensors are used, enable additional ports `/dev/ttyACM2` and `/dev/ttyACM3`, etc. the same as this step.
 
-6. Launch AWR1642 short range config:
+6. Launch AWR 1843 long range config:
 ```
-roslaunch ti_mmwave_rospkg 1642es2_short_range.launch
+roslaunch ti_mmwave_rospkg 1843es1_long_range.launch
 ```
 
 Note: If you want to build your own config, use [mmWave Demo Visualizer](https://dev.ti.com/mmwavedemovisualizer) and link the launch file to the config.

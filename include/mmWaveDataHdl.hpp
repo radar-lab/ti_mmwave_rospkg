@@ -60,21 +60,14 @@ namespace ti_mmwave_rospkg
 {
 
 class mmWaveDataHdl : public nodelet::Nodelet
-{  
-   public:
-   
-   mmWaveDataHdl();
-   
-   private:
-   
-   virtual void onInit();
+{
+    public:
 
-   //char* mySerialPort;
-   
-   //int myBaudRate;
-   
-}; //Class mmWaveDataHdl 
+    mmWaveDataHdl();
 
-} //namespace ti_mmwave_rospkg 
+    private:
 
+    virtual void onInit();
+};
+}
 #endif
