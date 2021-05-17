@@ -47,7 +47,7 @@ bool mmWaveCommSrv::commSrv_cb(mmWaveCLI::Request &req , mmWaveCLI::Response &re
             // Wait 20 seconds and try to open serial port again
             ros::Duration(20).sleep();
             mySerialObject.open();
-            mySerialObject.write('\n'); // Flush the port
+            mySerialObject.write("\n"); // Flush the port
         } catch (std::exception &e2) {
             ROS_ERROR("mmWaveCommSrv: Failed second time to open User serial port, error: %s", e1.what());
             NODELET_ERROR("mmWaveCommSrv: Port could not be opened. Port is \"%s\" and baud rate is %d", mySerialPort.c_str(), myBaudRate);
