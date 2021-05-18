@@ -77,55 +77,57 @@ enum MmwDemo_Output_TLV_Types
     MMWDEMO_OUTPUT_MSG_MAX
 };
 
-enum SorterState{ READ_HEADER, 
+enum SorterState {
+    READ_HEADER,
     CHECK_TLV_TYPE,
-    READ_OBJ_STRUCT, 
-    READ_LOG_MAG_RANGE, 
-    READ_NOISE, 
-    READ_AZIMUTH, 
-    READ_DOPPLER, 
+    READ_OBJ_STRUCT,
+    READ_LOG_MAG_RANGE,
+    READ_NOISE,
+    READ_AZIMUTH,
+    READ_DOPPLER,
     READ_STATS,
     SWAP_BUFFERS,
-    READ_SIDE_INFO};
+    READ_SIDE_INFO
+};
 
 struct MmwDemo_output_message_header_t
     {
         /*! brief   Version: : MajorNum * 2^24 + MinorNum * 2^16 + BugfixNum * 2^8 + BuildNum   */
-        uint32_t    version;
+        uint32_t version;
 
         /*! @brief   Total packet length including header in Bytes */
-        uint32_t    totalPacketLen;
+        uint32_t totalPacketLen;
 
         /*! @brief   platform type */
-        uint32_t    platform;
-        
+        uint32_t platform;
+
         /*! @brief   Frame number */
-        uint32_t    frameNumber;
+        uint32_t frameNumber;
 
         /*! @brief   Time in CPU cycles when the message was created. For XWR16xx: DSP CPU cycles, for XWR14xx: R4F CPU cycles */
-        uint32_t    timeCpuCycles;
-        
+        uint32_t timeCpuCycles;
+
         /*! @brief   Number of detected objects */
-        uint32_t    numDetectedObj;
+        uint32_t numDetectedObj;
 
         /*! @brief   Number of TLVs */
-        uint32_t    numTLVs;
+        uint32_t numTLVs;
 
         /*! @brief   Sub-frame Number (not used with XWR14xx) */
-        uint32_t    subFrameNumber;
+        uint32_t subFrameNumber;
     };
 
 // Detected object structure for mmWave SDK 1.x and 2.x
 struct MmwDemo_DetectedObj
     {
-        uint16_t   rangeIdx;     /*!< @brief Range index */
-        uint16_t   dopplerIdx;   /*!< @brief Dopler index */
-        uint16_t   peakVal;      /*!< @brief Peak value */
-        int16_t  x;             /*!< @brief x - coordinate in meters. Q format depends on the range resolution */
-        int16_t  y;             /*!< @brief y - coordinate in meters. Q format depends on the range resolution */
-        int16_t  z;             /*!< @brief z - coordinate in meters. Q format depends on the range resolution */
+        uint16_t rangeIdx;     /*!< @brief Range index */
+        uint16_t dopplerIdx;   /*!< @brief Dopler index */
+        uint16_t peakVal;      /*!< @brief Peak value */
+        int16_t x;             /*!< @brief x - coordinate in meters. Q format depends on the range resolution */
+        int16_t y;             /*!< @brief y - coordinate in meters. Q format depends on the range resolution */
+        int16_t z;             /*!< @brief z - coordinate in meters. Q format depends on the range resolution */
     };
-    
+
 // Detected object structures for mmWave SDK 3.x (DPIF_PointCloudCartesian_t and DPIF_PointCloudSideInfo_t)
 
 /**
@@ -135,20 +137,20 @@ struct MmwDemo_DetectedObj
 */
 typedef struct DPIF_PointCloudCartesian_t
 {
-/*! @brief x - coordinate in meters */
-float x;
+    /*! @brief x - coordinate in meters */
+    float x;
 
-/*! @brief y - coordinate in meters */
-float y;
+    /*! @brief y - coordinate in meters */
+    float y;
 
-/*! @brief z - coordinate in meters */
-float z;
+    /*! @brief z - coordinate in meters */
+    float z;
 
-/*! @brief Doppler velocity estimate in m/s. Positive velocity means target
-* is moving away from the sensor and negative velocity means target
-* is moving towards the sensor. */
-float velocity;
-}DPIF_PointCloudCartesian;
+    /*! @brief Doppler velocity estimate in m/s. Positive velocity means target
+     * is moving away from the sensor and negative velocity means target
+     * is moving towards the sensor. */
+    float velocity;
+} DPIF_PointCloudCartesian;
 
 /**
 * @brief
@@ -157,34 +159,23 @@ float velocity;
 */
 typedef struct DPIF_PointCloudSideInfo_t
 {
-/*! @brief snr - CFAR cell to side noise ratio in dB expressed in 0.1 steps of dB */
-int16_t snr;
+    /*! @brief snr - CFAR cell to side noise ratio in dB expressed in 0.1 steps of dB */
+    int16_t snr;
 
-/*! @brief y - CFAR noise level of the side of the detected cell in dB expressed in 0.1 steps of dB */
-int16_t noise;
-}DPIF_PointCloudSideInfo;
-
+    /*! @brief y - CFAR noise level of the side of the detected cell in dB expressed in 0.1 steps of dB */
+    int16_t noise;
+} DPIF_PointCloudSideInfo;
 
 struct mmwDataPacket{
-MmwDemo_output_message_header_t header;
-uint16_t numObjOut;
-uint16_t xyzQFormat; // only used for SDK 1.x and 2.x
-MmwDemo_DetectedObj objOut; // only used for SDK 1.x and 2.x
+    MmwDemo_output_message_header_t header;
+    uint16_t numObjOut;
+    uint16_t xyzQFormat; // only used for SDK 1.x and 2.x
+    MmwDemo_DetectedObj objOut; // only used for SDK 1.x and 2.x
 
-DPIF_PointCloudCartesian_t newObjOut; // used for SDK 3.x
-DPIF_PointCloudSideInfo_t sideInfo; // used for SDK 3.x
+    DPIF_PointCloudCartesian_t newObjOut; // used for SDK 3.x
+    DPIF_PointCloudSideInfo_t sideInfo; // used for SDK 3.x
 };
 
 const uint8_t magicWord[8] = {2, 1, 4, 3, 6, 5, 8, 7};
 
 #endif
-
-
-
-
-
-
-
-
-
-
