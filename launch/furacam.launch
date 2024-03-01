@@ -1,0 +1,96 @@
+<?xml version="1.0"?>
+<launch>
+
+    <arg name="pass_tf_args_as_params" default="false" />
+    <arg name="imu_from_descr" default="false" />
+    <arg name="override_cam_model" default="false" />
+
+    <arg name="name" default="oak" />
+    <arg name="params_file" default="$(find depthai_ros_driver)/config/rgb_only.yaml"/>
+    <arg name="camera_model" default="OAK-D-LITE" />
+
+    <arg name="base_frame" default="oak-d_frame" />
+    <arg name="parent_frame" default="oak-d-base-frame" />
+
+    <arg name="cam_pos_x" default="0.0" />
+    <!-- Position respect to base frame (i.e. "base_link) -->
+    <arg name="cam_pos_y" default="0.0" />
+    <!-- Position respect to base frame (i.e. "base_link) -->
+    <arg name="cam_pos_z" default="0.0" />
+    <!-- Position respect to base frame (i.e. "base_link) -->
+    <arg name="cam_roll" default="0.0" />
+    <!-- Orientation respect to base frame (i.e. "base_link) -->
+    <arg name="cam_pitch" default="0.0" />
+    <!-- Orientation respect to base frame (i.e. "base_link) -->
+    <arg name="cam_yaw" default="0.0" />
+    <!-- Orientation respect to base frame (i.e. "base_link) -->
+
+    <param name="$(arg name)/camera_i_camera_model" value="$(arg camera_model)" if="$(arg override_cam_model)"/> 
+    <param name="$(arg name)/camera_i_base_frame" value="$(arg base_frame)"/>
+    <param name="$(arg name)/camera_i_parent_frame" value="$(arg parent_frame)"/>
+    <param name="$(arg name)/camera_i_cam_pos_x" value="$(arg cam_pos_x)"/>
+    <param name="$(arg name)/camera_i_cam_pos_y" value="$(arg cam_pos_y)"/>
+    <param name="$(arg name)/camera_i_cam_pos_z" value="$(arg cam_pos_z)"/>
+    <param name="$(arg name)/camera_i_cam_roll" value="$(arg cam_roll)"/>
+    <param name="$(arg name)/camera_i_cam_pitch" value="$(arg cam_pitch)"/>
+    <param name="$(arg name)/camera_i_cam_yaw" value="$(arg cam_yaw)"/>
+    <param name="$(arg name)/camera_i_imu_from_descr" value="$(arg imu_from_descr)"/>
+    <param name="$(arg name)/camera_i_publish_tf_from_calibration" value="$(arg pass_tf_args_as_params)"/>
+    
+
+    <arg name="launch_prefix" default=""/>
+
+    <arg name="device" value="1843" doc="TI mmWave sensor device type [1443, 1642, 1843]"/>
+    <arg name="config" value="3d" doc="TI mmWave sensor device configuration [3d_best_range_res (not supported by 1642 EVM), 2d_best_range_res]"/>
+    <arg name="max_allowed_elevation_angle_deg" default="90" doc="Maximum allowed elevation angle in degrees for detected object data [0 > value >= 90]}"/>
+    <arg name="max_allowed_azimuth_angle_deg" default="90" doc="Maximum allowed azimuth angle in degrees for detected object data [0 > value >= 90]}"/>
+
+    <rosparam file="$(arg params_file)" />
+    <node pkg="rosservice" if="$(optenv DEPTHAI_DEBUG 0)" type="rosservice" name="set_log_level" args="call --wait /oak_nodelet_manager/set_logger_level 'ros.depthai_ros_driver' 'debug'" />
+    <group if="$(arg pass_tf_args_as_params)">
+        <include file="$(find depthai_descriptions)/launch/urdf.launch">
+            <arg name="base_frame" value="$(arg  name)" />
+            <arg name="parent_frame" value="$(arg  parent_frame)"/>
+            <arg name="camera_model" value="$(arg  camera_model)"/>
+            <arg name="tf_prefix" value="$(arg  name)" />
+            <arg name="cam_pos_x" value="$(arg  cam_pos_x)" />
+            <arg name="cam_pos_y" value="$(arg  cam_pos_y)" />
+            <arg name="cam_pos_z" value="$(arg  cam_pos_z)" />
+            <arg name="cam_roll" value="$(arg  cam_roll)" />
+            <arg name="cam_pitch" value="$(arg  cam_pitch)" />
+            <arg name="cam_yaw" value="$(arg  cam_yaw)" />
+        </include>
+    </group>
+
+    <node pkg="nodelet" type="nodelet" name="$(arg  name)_nodelet_manager"  launch-prefix="$(arg launch_prefix)" args="manager" output="screen">
+        <remap from="/nodelet_manager/load_nodelet" to="$(arg name)/nodelet_manager/load_nodelet"/>
+        <remap from="/nodelet_manager/unload_nodelet" to="$(arg name)/nodelet_manager/unload_nodelet"/>
+        <remap from="/nodelet_manager/list" to="$(arg name)/nodelet_manager/list"/>
+    </node>
+
+    <node name="$(arg  name)" pkg="nodelet" type="nodelet" output="screen" required="true" args="load depthai_ros_driver/Camera $(arg  name)_nodelet_manager">
+    </node>
+
+    <node pkg="ti_mmwave_rospkg" type="ti_mmwave_rospkg" name="ti_mmwave" ns="radar_0" output="screen">
+        <param name="command_port" value="/dev/ttyACM1"  />
+        <param name="command_rate" value="115200"   />
+        <param name="data_port" value="/dev/ttyACM2"  />
+        <param name="data_rate" value="921600"   />
+        <param name="max_allowed_elevation_angle_deg" value="$(arg max_allowed_elevation_angle_deg)"   />
+        <param name="max_allowed_azimuth_angle_deg" value="$(arg max_allowed_azimuth_angle_deg)"   />
+        <param name="frame_id" value="ti_mmwave_0"/>
+        <remap from="/ti_mmwave/radar_scan_pcl" to="/ti_mmwave/radar_scan_pcl_0"/>
+    </node>
+<!-- /workspace/src/ti_mmwave_rospkg/cfg/ -->
+    <!-- <node pkg="ti_mmwave_rospkg" type="mmWaveQuickConfig" name="mmWaveQuickConfig" ns="radar_0" args="$(find ti_mmwave_rospkg)/cfg/1642es2_short_range.cfg" output="screen" /> -->
+    <node pkg="ti_mmwave_rospkg" type="mmWaveQuickConfig" name="mmWaveQuickConfig" ns="radar_0" args="$(find ti_mmwave_rospkg)/cfg/1843_3d_lrr_furacam.cfg" output="screen" />
+
+    <node pkg="tf" type="static_transform_publisher" name="radar_baselink" args="0 0 0 0 0 0 ti_mmwave_pcl ti_mmwave_0 100"/>
+
+    <!-- <node pkg="tf" type="static_transform_publisher" name="camera_baselink" args="-2 0 .95 -1.5707963267948966 0 -1.5707963267948966 ti_mmwave_pcl  usb_webcam 100"/> -->
+    <node pkg="tf" type="static_transform_publisher" name="camera_baselink" args="-2 0 .95 -1.5707963267948966 0 -1.5707963267948966 ti_mmwave_pcl  oak/rgb 100"/>
+
+    <!-- Launch Rviz with pre-defined configuration to view mmWave sensor detected object data (color by intensity) -->
+    <node pkg="rviz" type="rviz" name="rviz" args="-d $(find ti_mmwave_rospkg)/launch/rviz/furacam.rviz"/>
+
+</launch>
